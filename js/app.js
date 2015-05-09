@@ -1,6 +1,6 @@
 (function (window) {
-	'use strict';
-
-	// Your starting point. Enjoy the ride!
+    'use strict';
+    // This is the haskell.    
+    h$main(h$mainZCMainzimain);
 
 })(window);

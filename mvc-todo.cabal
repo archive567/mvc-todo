@@ -1,0 +1,96 @@
+name: mvc-todo
+version: 0.0.1
+cabal-version: >=1.10
+build-type: Simple
+license: MIT
+license-file: LICENSE.md
+maintainer: Tony Day <tonyday567@gmail.com>
+bug-reports: https://github.com/tonyday567/mvc-todo/issues
+synopsis: Haskell project mvc-todo repo 
+description: <https://github.com/tonyday567/mvc-todo>
+extra-source-files:
+    README.md
+
+flag no-ghcjs
+     description:   compiling without ghcjs
+     default:       False
+
+library
+    hs-source-dirs: haskell
+    exposed-modules:
+                    Todo.Model
+                  , Todo.Views
+                  , Todo.Controllers
+    build-depends:  base ==4.*
+                  , data-default
+                  , lens
+                  , pretty-show
+                  , lucid
+                  , text
+                  , errors
+                  , mmorph
+                  , containers
+                  , mtl
+                  , mvc
+                  , pipes
+                  , pipes-concurrency
+                  , either
+                  , clay
+    if !flag(no-ghcjs)
+      build-depends:  ghcjs-base
+                    , ghcjs-dom
+                    , ghcjs-prim
+
+                    
+    default-language: Haskell2010
+    ghc-options: -Wall
+                     
+executable app
+    main-is: Main.hs
+    hs-source-dirs: haskell
+    build-depends: base ==4.*
+                 , pretty-show
+                 , mvc-todo
+                 , lens
+                 , data-default
+                 , lucid
+                 , text
+                 , errors
+                 , mmorph
+                 , containers
+                 , mtl
+                 , mvc
+                 , pipes
+                 , pipes-concurrency
+                 , either
+                 , clay
+    if !flag(no-ghcjs)
+      build-depends:  ghcjs-base
+                    , ghcjs-dom
+                    , ghcjs-prim
+
+    default-language: Haskell2010
+    ghc-options: -Wall
+
+test-suite test
+    main-is: Test.hs
+    hs-source-dirs: haskell
+    build-depends: base ==4.*
+                 , mvc-todo -any
+                 , pretty-show
+                 , hspec
+                 , tasty
+                 , tasty-hspec
+                 , lens
+                 , data-default
+                 , QuickCheck
+                 , errors
+                 , mmorph
+                 , mvc
+                 , pipes
+                 , pipes-concurrency
+                 , either
+                 , clay
+                
+    default-language: Haskell2010
+    type: exitcode-stdio-1.0
