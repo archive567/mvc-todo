@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -5,13 +6,11 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 
 module GHCJS.Extended 
-  ( module GHCJS.Foreign
-  , module GHCJS.Marshal 
-  , module GHCJS.Types
-  , maybeJSNull 
-  , Selector
+  ( 
+    maybeJSNull 
   , Element
   , Event
+  , Selector
   , onload
   , element
   , element'
@@ -33,7 +32,17 @@ module GHCJS.Extended
   , consoleLog
   , sync
   , sync1
+  , FromJSString(..)
+  , ToJSString(..)
+  , JSRef
   ) where
+
+#ifdef __GHCJS__
+import GHCJS.Types
+import GHCJS.Marshal
+import GHCJS.DOM.Types (maybeJSNull, Element, Event, NodeList)
+import GHCJS.Foreign
+#endif
 
 import           Clay (Selector, renderSelector)
 import           Control.Error.Extended
@@ -41,11 +50,109 @@ import           Data.Char
 import           Data.Foldable
 import           Data.Monoid
 import qualified Data.Text.Lazy as Text
-import           GHCJS.DOM.Types (maybeJSNull, Element, Event, NodeList)
-import           GHCJS.Foreign
-import           GHCJS.Marshal
-import           GHCJS.Types
 import           Lucid
+
+#ifndef __GHCJS__
+data Event
+type JSObject a = JSRef (JSObject_ a)
+data JSObject_ a
+data JSRef a
+data JSFun a
+data JSBool a
+-- | A DOM element.
+data Element
+
+data NodeList
+castRef = undefined
+data JSString
+class ToJSString a where 
+  toJSString :: a -> JSString
+  toJSString = undefined
+instance ToJSString String
+instance FromJSString String
+class FromJSString a where 
+  fromJSString :: JSString -> a
+  fromJSString = undefined
+newObj = undefined
+setProp = undefined
+getProp = undefined
+jsNull = undefined
+maybeJSNull = undefined
+toJSBool = undefined
+toJSRef_aeson = undefined
+syncCallback1 = undefined
+syncCallback2 = undefined
+syncCallback = undefined
+data AlwaysRetain = AlwaysRetain
+class ToJSRef a where
+  toJSRef :: a -> IO (JSRef a)
+  toJSRef = undefined
+  toJSRefListOf :: [a] -> IO (JSRef [a])
+  toJSRefListOf = undefined
+class FromJSRef a where
+  fromJSRef :: JSRef a -> IO (Maybe a)
+  fromJSRef = undefined
+  fromJSRefListOf :: JSRef [a] -> IO (Maybe [a])
+  fromJSRefListOf = undefined
+instance FromJSRef Int
+instance FromJSRef JSString
+instance FromJSRef Element
+instance FromJSRef x => FromJSRef [x]
+instance ToJSRef x => ToJSRef [x]
+instance ToJSRef x => ToJSRef (JSRef x)
+instance ToJSRef Int
+#endif
+
+
+#ifdef __GHCJS__
+foreign import javascript unsafe "$1.addEventListener($2,$3,$4)" jsAddEventListener :: JSRef Element -> JSString -> JSFun (JSRef Event -> IO ()) -> JSBool -> IO ()
+foreign import javascript unsafe "$1.classList.add($2)" jsAddClass :: (JSRef Element) -> JSString -> IO ()
+foreign import javascript unsafe "$1.classList.remove($2)" jsRemoveClass :: (JSRef Element) -> JSString -> IO ()
+foreign import javascript unsafe "$1.dataset.id" jsId :: JSRef Element -> IO JSString
+foreign import javascript unsafe "$1.focus()" jsFocus :: JSRef Element -> IO ()
+foreign import javascript unsafe "$1.parentElement" jsParentElement :: JSRef Element -> IO (JSRef Element)
+foreign import javascript unsafe "$1.querySelector($2)" jsElementQuerySelector :: JSRef Element -> JSString -> IO (JSRef Element)
+foreign import javascript unsafe "$1.querySelectorAll($2)" jsQuerySelectorAll :: JSRef Element -> JSString -> IO (JSRef NodeList)
+foreign import javascript unsafe "$1.tagName" jsTagName :: JSRef Element -> IO (JSString)
+foreign import javascript unsafe "$1===$2" jsEq :: JSRef a -> JSRef a -> IO Bool
+foreign import javascript unsafe "$1.length" jsLength :: JSRef NodeList -> IO Int
+foreign import javascript unsafe "$1.value" jsGetValue :: JSRef Element -> IO JSString
+foreign import javascript unsafe "$1.value = $2" jsSetValue :: JSRef Element -> JSString -> IO ()
+foreign import javascript unsafe "$1.innerHTML = $2" jsSetHtml :: (JSRef Element) -> JSString -> IO ()
+foreign import javascript unsafe "$1.item($2)" jsItem :: JSRef NodeList -> Word -> IO (JSRef Element)
+foreign import javascript unsafe "$1.keyCode" jsKeyCode :: JSRef Event -> IO Int
+foreign import javascript unsafe "$1.target" jsTarget :: JSRef Event -> IO (JSRef Element)
+foreign import javascript unsafe "console.log($1)" jsConsoleLog :: JSString -> IO ()
+foreign import javascript unsafe "document.location.hash" jsGetHash :: IO (JSString)
+foreign import javascript unsafe "document.querySelector($1)" jsQuerySelector :: JSString -> IO (JSRef Element)
+foreign import javascript unsafe "window.addEventListener($1,$2,$3)" jsWindowAddEventListener :: JSString -> JSFun (JSRef Event -> IO ()) -> JSBool -> IO ()
+foreign import javascript unsafe "window.onload = $1" jsOnload :: JSFun a -> IO ()
+#endif
+
+#ifndef __GHCJS__
+jsAddEventListener = undefined
+jsAddClass = undefined
+jsRemoveClass = undefined
+jsId = undefined
+jsFocus = undefined
+jsParentElement = undefined
+jsElementQuerySelector = undefined
+jsQuerySelectorAll = undefined
+jsTagName = undefined
+jsEq = undefined
+jsLength = undefined
+jsGetValue = undefined
+jsSetValue = undefined
+jsSetHtml = undefined
+jsItem = undefined
+jsKeyCode = undefined
+jsTarget = undefined
+jsConsoleLog = undefined
+jsGetHash = undefined
+jsQuerySelector = undefined
+jsWindowAddEventListener = undefined
+jsOnload = undefined
+#endif
 
 -- * orphans
 instance ToJSString (Html a) where
@@ -73,24 +180,14 @@ sync f = syncCallback AlwaysRetain True f
 -- * common idioms
 
 -- | console.log
-foreign import javascript unsafe "console.log($1)" 
-  jsConsoleLog :: JSString -> IO ()
-
 consoleLog :: (ToJSString a) => a -> IO ()
 consoleLog a = jsConsoleLog (toJSString a)
 
 -- | onload
-foreign import javascript unsafe "window.onload = $1" 
-  jsOnload :: JSFun a -> IO ()
-
 onload :: IO () -> IO ()
 onload f = jsOnload =<< sync f
 
 -- * element selection
-
-foreign import javascript unsafe "document.querySelector($1)" 
-  jsQuerySelector :: JSString -> IO (JSRef Element)
-
 element :: Selector -> IO (JSRef Element)
 element sel = jsQuerySelector (toJSString sel)
 
@@ -102,60 +199,33 @@ element' sel = do
 elementUnsafe :: String -> IO (JSRef Element)
 elementUnsafe sel = jsQuerySelector (toJSString sel)
 
-foreign import javascript unsafe "$1.querySelector($2)" 
-  jsElementQuerySelector :: JSRef Element -> JSString -> IO (JSRef Element)
-
 elementOf :: JSRef Element -> Selector -> IO (JSRef Element) 
 elementOf el sel = jsElementQuerySelector el (toJSString sel)
-
-foreign import javascript unsafe "$1.querySelectorAll($2)"
-  jsQuerySelectorAll :: JSRef Element -> JSString -> IO (JSRef NodeList)
 
 elementsOf :: JSRef Element -> Selector -> IO (JSRef NodeList) 
 elementsOf el sel = jsQuerySelectorAll el (toJSString sel)
 
 -- * manipulating dom
-foreign import javascript unsafe "$1[\"innerHTML\"] = $2" 
-  jsSetHtml :: (JSRef Element) -> JSString -> IO ()
-
 setHtml :: JSRef Element -> Html a -> IO ()
 setHtml el html = jsSetHtml el (toJSString html)
-
-foreign import javascript unsafe "$1.classList.add($2)" 
-  jsAddClass :: (JSRef Element) -> JSString -> IO ()
 
 addClass :: (ToJSString cl) => JSRef Element -> cl -> IO ()
 addClass el sel = jsAddClass el (toJSString sel) 
 
-foreign import javascript unsafe "$1.classList.remove($2)" 
-  jsRemoveClass :: (JSRef Element) -> JSString -> IO ()
-
 removeClass :: (ToJSString cl) => JSRef Element -> cl -> IO ()
 removeClass el sel = jsRemoveClass el (toJSString sel) 
 
-foreign import javascript unsafe "$1['value']=$2" 
-  jsSetValue :: JSRef Element -> JSString -> IO ()
-
 setValue :: (ToJSString a) => JSRef Element -> a -> IO ()
 setValue el val = jsSetValue el (toJSString val)
-
-foreign import javascript unsafe "$1['value']" 
-  jsGetValue :: JSRef Element -> IO JSString
 
 getValue :: (FromJSString a) => JSRef Element -> IO a
 getValue el = fromJSString <$> jsGetValue el
 
 -- * event listening
-foreign import javascript unsafe "$1.addEventListener($2,$3,$4)" 
-  jsAddEventListener :: JSRef Element -> JSString -> JSFun (JSRef Event -> IO ()) -> JSBool -> IO ()
-
 on :: JSRef Element -> String -> (JSRef Element -> JSRef Event -> IO ()) -> IO () 
 on el uiAction handler = do
   handler' <- sync1 (handler el)
   jsAddEventListener el (toJSString uiAction) handler' (toJSBool False)
-
-foreign import javascript unsafe "window.addEventListener($1,$2,$3)" 
-  jsWindowAddEventListener :: JSString -> JSFun (JSRef Event -> IO ()) -> JSBool -> IO ()
 
 onWindow :: String -> (JSRef Element -> JSRef Event -> IO ()) -> IO ()
 onWindow uiAction handler = do
@@ -193,43 +263,19 @@ applyIn base pattern action ev = do
 
 -- * miscellaneous
 
-foreign import javascript unsafe "$1.focus()" 
-  jsFocus :: JSRef Element -> IO ()
-
 focus :: JSRef Element -> IO ()
 focus = jsFocus
-
-foreign import javascript unsafe "$1.dataset.id" 
-  jsId :: JSRef Element -> IO JSString
 
 itemId :: JSRef Element -> EitherT String IO Int
 itemId el = do
   i <- lift $ jsId (castRef el)
   tryRead "Int conversion failed" (fromJSString i)
 
-foreign import javascript unsafe "$1['length']"
-  jsLength :: JSRef NodeList -> IO Int
-
-foreign import javascript unsafe "$1[\"item\"]($2)"
-  jsItem :: JSRef NodeList -> Word -> IO (JSRef Element)
-
-foreign import javascript unsafe "document.location.hash" 
-  jsGetHash :: IO (JSString)
-
 getHash :: (FromJSString a) => IO a
 getHash = do
   hash <- jsGetHash
   -- consoleLog hash
   pure $ fromJSString hash
-
-foreign import javascript unsafe "$1.parentElement" 
-  jsParentElement :: JSRef Element -> IO (JSRef Element)
-
-foreign import javascript unsafe "$1.tagName" 
-  jsTagName :: JSRef Element -> IO (JSString)
-
-foreign import javascript unsafe "$1===$2" 
-  jsEq :: JSRef a -> JSRef a -> IO Bool
 
 -- | go up the tree and find an element, if it exists
 findUp :: JSRef Element -> Selector -> IO (Maybe (JSRef Element))
@@ -256,12 +302,6 @@ getItem list n = do
   case item' of
     Nothing -> return Nothing
     Just _ -> return (Just item)
-
-foreign import javascript unsafe "$1[\"target\"]"
-  jsTarget :: JSRef Event -> IO (JSRef Element)
-
-foreign import javascript unsafe "$1[\"keyCode\"]"
-  jsKeyCode :: JSRef Event -> IO Int
 
 keyCode :: JSRef Event -> IO Int
 keyCode ev = jsKeyCode ev

@@ -68,7 +68,7 @@ ctlEditItemDone :: (FromJSString a) => Output (Action a) -> JSRef Element -> JSR
 ctlEditItemDone o el _ = do
   box <- elementOf el ".edit"
   value <- getValue box
-  send' o =<< idTagged (\x -> EditItemDone x (fromJSString value)) el
+  send' o =<< idTagged (\x -> EditItemDone x value) el
 
 ctlHash :: Output (Action a) -> JSRef Element -> JSRef Event -> IO ()
 ctlHash o _ _ = do

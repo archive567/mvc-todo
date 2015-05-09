@@ -21,21 +21,22 @@ library
                     Todo.Model
                   , Todo.Views
                   , Todo.Controllers
+                  , Control.Error.Extended
+                  , GHCJS.Extended
     build-depends:  base ==4.*
-                  , data-default
-                  , lens
-                  , pretty-show
-                  , lucid
-                  , text
-                  , errors
-                  , mmorph
+                  , clay
                   , containers
+                  , data-default
+                  , either
+                  , errors
+                  , lens
+                  , lucid
+                  , mmorph
                   , mtl
                   , mvc
                   , pipes
                   , pipes-concurrency
-                  , either
-                  , clay
+                  , text
     if !flag(no-ghcjs)
       build-depends:  ghcjs-base
                     , ghcjs-dom
@@ -48,22 +49,20 @@ library
 executable app
     main-is: Main.hs
     hs-source-dirs: haskell
-    build-depends: base ==4.*
-                 , pretty-show
-                 , mvc-todo
-                 , lens
-                 , data-default
-                 , lucid
-                 , text
-                 , errors
-                 , mmorph
-                 , containers
-                 , mtl
-                 , mvc
-                 , pipes
-                 , pipes-concurrency
-                 , either
-                 , clay
+    build-depends:  base ==4.*
+                  , clay
+                  , containers
+                  , data-default
+                  , either
+                  , errors
+                  , lens
+                  , lucid
+                  , mmorph
+                  , mtl
+                  , mvc
+                  , pipes
+                  , pipes-concurrency
+                  , text
     if !flag(no-ghcjs)
       build-depends:  ghcjs-base
                     , ghcjs-dom
@@ -75,24 +74,23 @@ executable app
 test-suite test
     main-is: Test.hs
     hs-source-dirs: testing, haskell
-    build-depends: base ==4.*
-                 , mvc-todo -any
-                 , pretty-show
-                 , hspec
-                 , tasty
-                 , tasty-hspec
-                 , lens
-                 , mtl
-                 , containers
-                 , data-default
-                 , QuickCheck
-                 , errors
-                 , mmorph
-                 , mvc
-                 , pipes
-                 , pipes-concurrency
-                 , either
-                 , clay
+    build-depends:  base ==4.*
+                  , QuickCheck
+                  , tasty
+                  , tasty-hspec
+                  , clay
+                  , containers
+                  , data-default
+                  , either
+                  , errors
+                  , lens
+                  , lucid
+                  , mmorph
+                  , mtl
+                  , mvc
+                  , pipes
+                  , pipes-concurrency
+                  , text
                 
     default-language: Haskell2010
     type: exitcode-stdio-1.0
