@@ -217,7 +217,10 @@ foreign import javascript unsafe "document.location.hash"
   jsGetHash :: IO (JSString)
 
 getHash :: (FromJSString a) => IO a
-getHash = fromJSString <$> jsGetHash
+getHash = do
+  hash <- jsGetHash
+  -- consoleLog hash
+  pure $ fromJSString hash
 
 foreign import javascript unsafe "$1.parentElement" 
   jsParentElement :: JSRef Element -> IO (JSRef Element)

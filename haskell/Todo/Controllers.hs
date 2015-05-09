@@ -73,7 +73,7 @@ ctlEditItemDone o el _ = do
 ctlHash :: Output (Action a) -> JSRef Element -> JSRef Event -> IO ()
 ctlHash o _ _ = do
   hash <- getHash
-  let path = takeWhile (not . (== '/')) . dropWhile (not . (== '/')) $ hash
+  let path = takeWhile (not . (== '/')) . drop 1 . dropWhile (not . (== '/')) $ hash
   let path' =
         case path of
           "completed" -> Just Completed

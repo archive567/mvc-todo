@@ -31,6 +31,7 @@ import           Control.Monad
 import           Control.Monad.State.Strict
 import           Data.Default
 import qualified Data.Map as Map
+import           Data.Monoid
 import           Pipes
 import           Prelude hiding (foldl)
 
@@ -110,7 +111,7 @@ apply (Toggle x) tds =
 apply ToggleAll tds =
   over todosItems (over (traverse . itemStatus) toggleStatus) tds
 
-modifyState :: Action String -> ListT (State (Todos String)) (Todos String)
+modifyState :: (Eq a, Monoid a) => Action a -> ListT (State (Todos a)) (Todos a)
 modifyState action = case action of
   NoAction -> mzero
   _ -> do
@@ -119,15 +120,14 @@ modifyState action = case action of
     lift $ put tds'
     pure tds'
 
-data Out 
-  = StateOut (Todos String)
-  | ActionOut (Action String)
+data Out a
+  = StateOut (Todos a)
+  | ActionOut (Action a)
 
 makePrisms ''Out
 
 -- | apply the incoming action to state and pass through the action (just so it can be console logged)
-model :: Action String -> ListT (State (Todos String)) Out
-model action = do
-  StateOut <$> modifyState action
-  ActionOut <$> pure action
+model :: (Eq a, Monoid a) => Action a -> ListT (State (Todos a)) (Out a)
+model action =
+  (StateOut <$> modifyState action) <> (ActionOut <$> pure action)
 

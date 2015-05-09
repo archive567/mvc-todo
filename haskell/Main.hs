@@ -34,7 +34,7 @@ run = do
      ( pure (asInput i) <>
        producer unbounded (yield Refresh)))
 
-render' :: Out -> IO ()
+render' :: Out String -> IO ()
 render' (ActionOut action) = print action
 render' (StateOut tds) = render tds
 
