@@ -28,10 +28,10 @@ run :: IO (Todos String)
 run = do
   (o, i) <- spawn unbounded
   runEitherPrintError "controller error" (controllers o)
-  runMVC initialState (asPipe model')
+  runMVC initialState (asPipe $ loop model)
     ((,) <$> 
      pure (asSink render') <*> 
-     ( pure (asInput i) <> 
+     ( pure (asInput i) <>
        producer unbounded (yield Refresh)))
 
 render' :: Out -> IO ()
@@ -43,7 +43,7 @@ testMVC' :: IO (Todos String)
 testMVC' = do
   (o, i) <- spawn unbounded
   runEitherPrintError "controller error" (controllers o)
-  runMVC initialState (asPipe model')
+  runMVC initialState (asPipe $ loop model)
     ((,) <$> (  (handles _StateOut  <$> pure (asSink render))
              <> (handles _ActionOut <$> pure (asSink print)))
          <*> (  pure (asInput i)

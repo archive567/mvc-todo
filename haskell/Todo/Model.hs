@@ -24,7 +24,6 @@ module Todo.Model
   , toggleStatus
   , apply
   , model
-  , model'
   ) where
 
 import           Control.Lens
@@ -111,14 +110,14 @@ apply (Toggle x) tds =
 apply ToggleAll tds =
   over todosItems (over (traverse . itemStatus) toggleStatus) tds
 
--- | output is just the todo state
-model :: Pipe (Action String) (Todos String) (State (Todos String)) ()
-model = forever $ do
-  action <- await
-  tds <- lift get
-  let tds' = apply action tds
-  lift $ put tds'
-  yield tds'
+modifyState :: Action String -> ListT (State (Todos String)) (Todos String)
+modifyState action = case action of
+  NoAction -> mzero
+  _ -> do
+    tds <- lift get
+    let tds' = apply action tds
+    lift $ put tds'
+    pure tds'
 
 data Out 
   = StateOut (Todos String)
@@ -126,12 +125,9 @@ data Out
 
 makePrisms ''Out
 
--- | output state and actions
-model' :: Pipe (Action String) Out (State (Todos String)) ()
-model' = forever $ do
-  action <- await
-  tds <- lift get
-  let tds' = apply action tds
-  lift $ put tds'
-  yield $ ActionOut action
-  yield $ StateOut tds'
+-- | apply the incoming action to state and pass through the action (just so it can be console logged)
+model :: Action String -> ListT (State (Todos String)) Out
+model action = do
+  StateOut <$> modifyState action
+  ActionOut <$> pure action
+
