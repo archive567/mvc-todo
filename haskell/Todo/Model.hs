@@ -1,92 +1,109 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC-fno-warn-type-defaults#-}
 
-module Todo.Model where
+module Todo.Model 
+  ( Todos(..)
+  , HasTodos(..)
+  , Action(..)
+  , Out(..)
+  , _StateOut
+  , _ActionOut
+  , Item(..)
+  , HasItem(..)
+  , ItemId(..)
+  , ItemStatus(..)
+  , toggleStatus
+  , apply
+  , model
+  , model'
+  ) where
 
-import Prelude hiding (foldl)
-import Control.Monad
-import Control.Lens
-import Data.Default
+import           Control.Lens
+import           Control.Monad
+import           Control.Monad.State.Strict
+import           Data.Default
 import qualified Data.Map as Map
-import Control.Monad.State.Strict
-import Pipes
+import           Pipes
+import           Prelude hiding (foldl)
 
 -- * ADTs
-
-data ItemStatus = Active | Completed deriving (Show, Eq)
+data ItemStatus 
+  = Active
+  | Completed
+  deriving (Show, Eq)
 
 toggleStatus :: ItemStatus -> ItemStatus
 toggleStatus Active = Completed
 toggleStatus Completed = Active
 
-data Id = Int deriving (Show, Eq, Ord)
+newtype ItemId = ItemId { unItemId :: Int }
+  deriving (Show, Eq, Ord)
 
-data Item a = Item 
-  { _itemStatus :: ItemStatus
-  , _itemText :: a 
-  } deriving (Show, Eq)
+data Item a = Item { _itemStatus :: ItemStatus, _itemText :: a }
+  deriving (Show, Eq)
 
-data Todos a = Todos 
-  { _todosNewItem :: a
-  , _todosEditing :: Maybe Int
-  , _todosNextId :: Int
-  , _todosFilter :: Maybe ItemStatus
-  , _todosItems :: Map.Map Int (Item a)
-  } deriving (Show, Eq)
+data Todos a =
+  Todos
+    { _todosNewItem :: a
+    , _todosEditing :: Maybe ItemId
+    , _todosNextId :: ItemId
+    , _todosFilter :: Maybe ItemStatus
+    , _todosItems :: Map.Map ItemId (Item a)
+    }
+  deriving (Show, Eq)
 
-makeLenses ''Item
-makeLenses ''Todos
+makeClassy ''Item
+
+makeClassy ''Todos
 
 instance (Monoid a) => Default (Todos a) where
-  def = Todos mempty Nothing 0 Nothing Map.empty
+  def = Todos mempty Nothing (ItemId 0) Nothing Map.empty
 
 data Action a 
   = ClearCompleted
-  | DeleteItem Int
-  | EditItem Int
-  | EditItemCancel Int
-  | EditItemDone Int a
+  | DeleteItem ItemId
+  | EditItem ItemId
+  | EditItemCancel ItemId
+  | EditItemDone ItemId a
   | Filter (Maybe ItemStatus)
-  | Editing (Maybe Int)
   | NewItem a
   | NoAction
   | Refresh
-  | Toggle Int
+  | Toggle ItemId
   | ToggleAll
   deriving (Show, Eq)
 
--- * algebra
--- | apply an action to the todo model
+-- * algebra | apply an action to the todo model
 apply :: (Eq a, Monoid a) => Action a -> Todos a -> Todos a
-apply ClearCompleted tds = 
+apply ClearCompleted tds =
   over todosItems (Map.filter (\x -> view itemStatus x /= Completed)) tds
 apply (DeleteItem x) tds = over todosItems (Map.delete x) tds
-apply (EditItem x) tds = set todosEditing (Just x) $ tds 
-apply (EditItemCancel _) tds = set todosEditing Nothing $ tds 
-apply (EditItemDone x t) tds = add $ set todosEditing Nothing $ tds
+apply (EditItem x) tds = set todosEditing (Just x) tds
+apply (EditItemCancel _) tds = set todosEditing Nothing tds
+apply (EditItemDone x t) tds = over todosItems adjustOrDelete $ set todosEditing Nothing tds
   where
-  add = 
-    if t == mempty
-    then over todosItems (Map.delete x)
-    else over todosItems (Map.adjust (set itemText t) x)
-
+    adjustOrDelete = 
+      if t == mempty
+        then Map.delete x
+        else Map.adjust (set itemText t) x
 apply (Filter f) tds = set todosFilter f tds
-apply (Editing f) tds = set todosEditing f tds
-apply (NewItem t) tds = 
+apply (NewItem t) tds =
   if t == mempty
-  then tds
-  else 
-    ( over todosItems (Map.insert (view todosNextId tds) (Item Active t))
-    $ over todosNextId (+1)
-    $ set todosNewItem mempty 
-    $ tds
-    )
+    then tds
+    else 
+      over todosItems
+      (Map.insert (view todosNextId tds) (Item Active t)) $ 
+      over todosNextId (\(ItemId x) -> (ItemId (x + 1))) $ 
+      set todosNewItem mempty tds
 apply NoAction tds = tds
 apply Refresh tds = tds
 apply (Toggle x) tds =
@@ -94,20 +111,22 @@ apply (Toggle x) tds =
 apply ToggleAll tds =
   over todosItems (over (traverse . itemStatus) toggleStatus) tds
 
+-- | output is just the todo state
 model :: Pipe (Action String) (Todos String) (State (Todos String)) ()
 model = forever $ do
   action <- await
   tds <- lift get
   let tds' = apply action tds
-  lift $ put tds' 
+  lift $ put tds'
   yield tds'
 
 data Out 
-  = StateOut (Todos String) 
+  = StateOut (Todos String)
   | ActionOut (Action String)
 
 makePrisms ''Out
 
+-- | output state and actions
 model' :: Pipe (Action String) Out (State (Todos String)) ()
 model' = forever $ do
   action <- await
@@ -116,7 +135,3 @@ model' = forever $ do
   lift $ put tds'
   yield $ ActionOut action
   yield $ StateOut tds'
-
-
-
-

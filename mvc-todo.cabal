@@ -74,7 +74,7 @@ executable app
 
 test-suite test
     main-is: Test.hs
-    hs-source-dirs: haskell
+    hs-source-dirs: testing, haskell
     build-depends: base ==4.*
                  , mvc-todo -any
                  , pretty-show
@@ -82,6 +82,8 @@ test-suite test
                  , tasty
                  , tasty-hspec
                  , lens
+                 , mtl
+                 , containers
                  , data-default
                  , QuickCheck
                  , errors

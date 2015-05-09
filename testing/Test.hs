@@ -1,4 +1,4 @@
-import qualified TestMVCTodo
+import qualified TestTodoModel
 
 import           Control.Applicative
 import           Test.Tasty
@@ -7,7 +7,7 @@ import           Test.Tasty.Hspec
 -- the tests
 tests :: IO TestTree
 tests = testGroup "mvc-todo" <$> sequence
-  [ testSpec "MVC.Todo" =<< TestMVCTodo.tests
+  [ testSpec "Todo" =<< TestTodoModel.tests
   ]
 
 main :: IO ()

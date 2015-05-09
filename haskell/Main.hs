@@ -2,39 +2,37 @@
 
 module Main where
 
-import Todo.Model
-import Todo.Views
-import Todo.Controllers
-import GHCJS.Extended
-import Control.Error.Extended
-import MVC
-import MVC.Prelude as MVC
+import           Control.Error.Extended (runEitherPrintError)
 import qualified Data.Map as Map
+import           GHCJS.Extended (onload)
+import           MVC
+import           MVC.Prelude as MVC
+import           Todo.Controllers (controllers)
+import           Todo.Model
+import           Todo.Views (render)
 
 main :: IO ()
-main = onload (void testMVC)
+main = onload (void run)
 
-testState :: Todos String
-testState = 
-  Todos "" Nothing 3 Nothing 
-  (Map.fromList $ zip [0..] 
-   [ Item Active "write view"
-   , Item Active "write controllers"
-   , Item Completed "render a todo list"])
+initialState :: Todos String
+initialState =
+  Todos "" Nothing (ItemId 3) Nothing
+    (Map.fromList $ 
+     zip (ItemId <$> [0 ..])
+     [ Item Active "write view"
+     , Item Active "write controllers"
+     , Item Completed "render a todo list"
+     ])
 
-testMVC :: IO (Todos String)
-testMVC = do
+run :: IO (Todos String)
+run = do
   (o, i) <- spawn unbounded
-  -- render testState
   runEitherPrintError "controller error" (controllers o)
-  runMVC testState (asPipe model')
-    ((,) <$>
-     (  pure $ asSink render'
-     ) <*>
-     (  pure (asInput i)
-     <> producer unbounded (yield Refresh)
-     )
-    )
+  runMVC initialState (asPipe model')
+    ((,) <$> 
+     pure (asSink render') <*> 
+     ( pure (asInput i) <> 
+       producer unbounded (yield Refresh)))
 
 render' :: Out -> IO ()
 render' (ActionOut action) = print action
@@ -45,14 +43,8 @@ testMVC' :: IO (Todos String)
 testMVC' = do
   (o, i) <- spawn unbounded
   runEitherPrintError "controller error" (controllers o)
-  runMVC testState (asPipe model')
-    ((,) <$>
-     (  ((handles _StateOut) <$> (pure $ asSink render))
-     <> ((handles _ActionOut) <$> (pure $ asSink print))
-     ) <*>
-     (  pure (asInput i)
-     <> producer unbounded (yield Refresh)
-     )
-    )
-
-
+  runMVC initialState (asPipe model')
+    ((,) <$> (  (handles _StateOut  <$> pure (asSink render))
+             <> (handles _ActionOut <$> pure (asSink print)))
+         <*> (  pure (asInput i)
+             <> producer unbounded (yield Refresh)))
