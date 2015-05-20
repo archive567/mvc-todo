@@ -4,45 +4,18 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module TestTodoModel where
+module Todo.Arbitrary where
 
 import Todo.Model
 
 import           Control.Applicative
 import           Control.Monad
-import           Test.Tasty.Hspec
 import Data.Monoid
 import Data.Default (def)
 import Test.QuickCheck
 import qualified Data.Map as Map
 import Data.String
-
-demoActions :: [Action String]
-demoActions = 
-  mconcat ((\x -> [ NewItem ("item number " ++ show x)]) <$> [0..5]) ++
-  (Toggle . ItemId <$> [0,2,4]) ++
-  [ToggleAll] ++
-  [ClearCompleted] ++
-  (DeleteItem . ItemId <$> [0]) ++
-  mconcat ((\x -> [ EditItem (ItemId x), EditItemDone (ItemId x) ("item done: " ++ show x), Toggle (ItemId x)]) <$> [2])
-
-demoTodos :: Todos String
-demoTodos = foldl (flip apply) def demoActions
-
-demoAfterActions :: Todos String
-demoAfterActions =
-  Todos "" Nothing (ItemId 6) Nothing
-  ( Map.fromList
-    [ (ItemId 2, Item { _itemStatus = Completed , _itemText = "item done: 2" })
-    , (ItemId 4, Item { _itemStatus = Active    , _itemText = "item number 4" })
-    ]
-  )
-
-tests :: IO (SpecWith())
-tests =
-  return $ describe "initial r&d" $
-    it "canned demo ok"     $ 
-      demoTodos `shouldBe` demoAfterActions
+import Data.List (nub)
 
 instance Arbitrary ItemStatus where
   arbitrary = 
@@ -72,7 +45,7 @@ instance Arbitrary (Todos String) where
     [ (6, pure Nothing)
     , (4, Just <$> arbitrary)
     ] <*>
-    (Map.fromList <$> (\x -> [x]) <$> ((,) <$> arbitrary <*> arbitrary))
+    (Map.fromList <$> (: []) <$> ((,) <$> arbitrary <*> arbitrary))
 
 instance Arbitrary (Action String) where
   arbitrary = frequency
@@ -101,52 +74,95 @@ instance Show TodoStatement where
 newtype HaskellVerb = HaskellVerb { unVerb :: String }
 
 instance IsString HaskellVerb where
-  fromString s = HaskellVerb s
+  fromString = HaskellVerb
 
 instance Show HaskellVerb where
   show (HaskellVerb s) = s
 
-newtype HaskellPrefix = HaskellPrefix { unPrefix :: String } deriving (Show)
-newtype Haskellism    = Haskellism    { unHaskellism :: String } deriving (Show)
-newtype HaskellSuffix = HaskellSuffix { unSuffix :: String } deriving (Show)
+newtype HaskellPrefix = HaskellPrefix { unPrefix :: String } deriving (Show, Eq)
+newtype Haskellism    = Haskellism    { unHaskellism :: String } deriving (Show, Eq)
+newtype HaskellSuffix = HaskellSuffix { unSuffix :: String } deriving (Show, Eq)
 
 data HaskellNoun = HaskellNoun [HaskellPrefix] Haskellism [HaskellSuffix]
 
 instance Show HaskellNoun where
-  show (HaskellNoun ps h ss) = mconcat (unPrefix <$> ps) <> unHaskellism h <> (mconcat $ unSuffix <$> ss)
+  show (HaskellNoun ps h ss) = mconcat (unPrefix <$> ps) <> unHaskellism h <> mconcat (unSuffix <$> ss)
+
+instance IsString HaskellNoun where
+  fromString s = HaskellNoun [] (Haskellism s) []
+
+instance IsString Haskellism where
+  fromString = Haskellism
 
 instance Arbitrary (TodoStatement) where
   arbitrary = TodoStatement <$> arbitrary <*> arbitrary
 
 instance Arbitrary (HaskellNoun) where
-  arbitrary = HaskellNoun <$> arbitrary <*> arbitrary <*> arbitrary
+  arbitrary = frequency $ 
+    [ (20, HaskellNoun <$> ((take 2 . nub) <$> arbitrary) <*> arbitrary <*> ((take 1) <$> arbitrary)) 
+    , (1, pure "cabal hell")
+    , (1, pure "ADTs")
+    , (1, pure "everything")
+    , (5, HaskellNoun <$> pure [] <*> arbitrary <*> pure [])
+    ]
 
 instance Arbitrary (HaskellVerb) where
   arbitrary = frequency $ (\(x,y) -> (x, pure y)) <$>
-    [ (9, "invent")
-    , (5, "ponder")
-    , (3, "code")
+    [ (3, "invent")
+    , (3, "ponder")
+    , (5, "code")
+    , (1, "beta-reduce")
+    , (1, "lambdify")
+    , (3, "refactor")
+    , (2, "reduce")
+    , (1, "DeBruijnize")
+    , (2, "curry")
+    , (1, "howard-curry")
+    , (1, "simplify")
+    , (1, "complexificate")
+    , (2, "git the")
+    , (1, "build")
+    , (1, "prettify")
+    , (1, "compile")
+    , (1, "generalize")
+    , (1, "abstract")
+    , (1, "ignore")
+    , (1, "saturate")
+    -- , (3, show <$> (arbitrary :: Gen Haskellism))
     ]
+
 instance Arbitrary (HaskellPrefix) where
   arbitrary = frequency $ (\(x,y) -> (x, pure (HaskellPrefix y))) <$>
-    [ (9, "homo")
-    , (5, "functo")
-    , (3, "morph")
+    [ (1, "homo-")
+    , (1, "functo-")
+    , (2, "contra-")
+    , (2, "bi-")
+    , (3, "iso-")
+    , (2, "pro-")
+    , (4, "co-")
+    , (4, "free-")
+    , (1, "endo-")
+    , (1, "morphic-")
+    , (10, "")
     ]
 
 instance Arbitrary (HaskellSuffix) where
   arbitrary = frequency $ (\(x,y) -> (x, pure (HaskellSuffix y))) <$>
-    [ (9, "ism")
-    , (5, "orial")
-    , (3, "al")
+    [ (1, "-ism")
+    , (1, "-orial")
+    , (1, "-ic")
+    , (12, "")
     ]
 
 instance Arbitrary (Haskellism) where
   arbitrary = frequency $ (\(x,y) -> (x, pure (Haskellism y))) <$>
-    [ (9, "functor")
-    , (5, "monoid")
+    [ (6, "functor")
+    , (4, "monoid")
+    , (1, "dimap")
     , (3, "applicative")
-    , (4, "arrow")
+    , (2, "arrow")
+    , (3, "monad")
+    , (1, "something")
     ]
 
 

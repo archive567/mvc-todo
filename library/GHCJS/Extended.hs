@@ -23,6 +23,7 @@ module GHCJS.Extended
   , addClass
   , removeClass
   , setValue
+  , checked
   , setHtml
   , itemId
   , focus
@@ -118,6 +119,7 @@ foreign import javascript unsafe "$1===$2" jsEq :: JSRef a -> JSRef a -> IO Bool
 foreign import javascript unsafe "$1.length" jsLength :: JSRef NodeList -> IO Int
 foreign import javascript unsafe "$1.value" jsGetValue :: JSRef Element -> IO JSString
 foreign import javascript unsafe "$1.value = $2" jsSetValue :: JSRef Element -> JSString -> IO ()
+foreign import javascript unsafe "$1.checked" jsChecked :: JSRef Element -> IO (JSBool)
 foreign import javascript unsafe "$1.innerHTML = $2" jsSetHtml :: (JSRef Element) -> JSString -> IO ()
 foreign import javascript unsafe "$1.item($2)" jsItem :: JSRef NodeList -> Word -> IO (JSRef Element)
 foreign import javascript unsafe "$1.keyCode" jsKeyCode :: JSRef Event -> IO Int
@@ -164,11 +166,13 @@ instance ToJSString (Selector) where
 unpack :: Selector -> String
 unpack = Text.unpack . renderSelector
 
+{-
 instance ToJSString Text.Text where
   toJSString = toJSString . Text.unpack
 
 instance FromJSString Text.Text where
   fromJSString = Text.pack . fromJSString
+-}
 
 -- * common syncing patterns for haskell functions
 sync1 :: (JSRef a -> IO b) -> IO (JSFun (JSRef a -> IO b))
@@ -220,6 +224,9 @@ setValue el val = jsSetValue el (toJSString val)
 
 getValue :: (FromJSString a) => JSRef Element -> IO a
 getValue el = fromJSString <$> jsGetValue el
+
+checked :: JSRef Element -> IO Bool
+checked el = fromJSBool <$> jsChecked el
 
 -- * event listening
 on :: JSRef Element -> String -> (JSRef Element -> JSRef Event -> IO ()) -> IO () 

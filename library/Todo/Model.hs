@@ -53,11 +53,11 @@ data Item a = Item { _itemStatus :: ItemStatus, _itemText :: a }
 
 data Todos a =
   Todos
-    { _todosNewItem :: a
-    , _todosEditing :: Maybe ItemId
-    , _todosNextId :: ItemId
-    , _todosFilter :: Maybe ItemStatus
-    , _todosItems :: Map.Map ItemId (Item a)
+    { _todosNewItem :: a                        -- drafted new todo item
+    , _todosEditing :: Maybe ItemId             -- a todo item is being edited
+    , _todosNextId  :: ItemId                   -- an item id source
+    , _todosFilter  :: Maybe ItemStatus         -- maybe a filter is in place
+    , _todosItems   :: Map.Map ItemId (Item a)  -- the todo items
     }
   deriving (Show, Eq)
 
@@ -123,6 +123,7 @@ modifyState action = case action of
 data Out a
   = StateOut (Todos a)
   | ActionOut (Action a)
+  deriving (Show, Eq)
 
 makePrisms ''Out
 

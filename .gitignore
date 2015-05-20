@@ -2,3 +2,4 @@ node_modules
 /.cabal-sandbox/
 /cabal.sandbox.config
 /dist/
+/cabal.sandbox.config-710

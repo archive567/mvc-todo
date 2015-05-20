@@ -16,14 +16,16 @@ flag no-ghcjs
      default:       False
 
 library
-    hs-source-dirs: haskell
+    hs-source-dirs: library
     exposed-modules:
                     Todo.Model
                   , Todo.Views
                   , Todo.Controllers
+                  , Todo.Arbitrary
                   , Control.Error.Extended
                   , GHCJS.Extended
     build-depends:  base ==4.*
+                  , QuickCheck
                   , clay
                   , containers
                   , data-default
@@ -41,15 +43,15 @@ library
       build-depends:  ghcjs-base
                     , ghcjs-dom
                     , ghcjs-prim
-
-                    
+        
     default-language: Haskell2010
     ghc-options: -Wall
                      
 executable app
-    main-is: Main.hs
-    hs-source-dirs: haskell
+    main-is: app.hs
+    hs-source-dirs: executable
     build-depends:  base ==4.*
+                  , mvc-todo
                   , clay
                   , containers
                   , data-default
@@ -71,10 +73,39 @@ executable app
     default-language: Haskell2010
     ghc-options: -Wall
 
-test-suite test
-    main-is: Test.hs
-    hs-source-dirs: testing, haskell
+executable auto
+    main-is: auto.hs
+    hs-source-dirs: executable
     build-depends:  base ==4.*
+                  , mvc-todo
+                  , clay
+                  , containers
+                  , data-default
+                  , either
+                  , errors
+                  , lens
+                  , lucid
+                  , mmorph
+                  , mtl
+                  , mvc
+                  , pipes
+                  , pipes-concurrency
+                  , text
+                  , QuickCheck
+    if !flag(no-ghcjs)
+      build-depends:  ghcjs-base
+                    , ghcjs-dom
+                    , ghcjs-prim
+
+    default-language: Haskell2010
+    ghc-options: -Wall
+
+    
+test-suite test
+    main-is: test.hs
+    hs-source-dirs: testing
+    build-depends:  base ==4.*
+                  , mvc-todo
                   , QuickCheck
                   , tasty
                   , tasty-hspec
