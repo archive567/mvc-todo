@@ -1,6 +1,5 @@
-<h1 id="test-ghcjs">test-ghcjs</h1>
-<p><a href="https://travis-ci.org/tonyday567/test-ghcjs"><img src="https://travis-ci.org/tonyday567/test-ghcjs.png" alt="Build Status" /></a></p>
-<h2 id="test-ghcjs-1">test-ghcjs</h2>
+<p><meta charset="utf-8"> <link rel="stylesheet" href="http://tonyday567.github.io/other/lhs.css"></p>
+<h1 id="test-ghcjs-build-status"><a href="https://github.com/tonyday567/test-ghcjs">test-ghcjs</a> <a href="https://travis-ci.org/tonyday567/test-ghcjs"><img src="https://travis-ci.org/tonyday567/test-ghcjs.png" alt="Build Status" /></a></h1>
 <p>A bare-minimum ghcjs installation constructed with the following steps:</p>
 <ul class="incremental">
 <li><code>stack new test-ghcjs readme-lhs</code></li>
@@ -8,11 +7,11 @@
 <li><code>stack build</code> compiles readme.lhs aka the code below.</li>
 </ul>
 <p>and that's it!</p>
-<p><code>node $(stack path --local-install-root)/bin/readme.jsexe/all.js</code> checks to see it's all working.</p>
+<p><code>node $(stack path --local-install-root)/bin/readme.jsexe/all.js</code> to check if it's working.</p>
 <p>Incredibly</p>
 <pre>
   <code style="white-space: pre-wrap;">
-stack build --exec "node $(stack path --local-install-root)/bin/readme.jsexe/all.js" --exec "pandoc -f markdown+lhs -i readme.lhs -t html -o index.html --filter pandoc-include --mathjax" --exec "pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md --filter pandoc-include --mathjax" --file-watch
+stack build --exec "node $(stack path --local-install-root)/bin/readme.jsexe/all.js" --exec "pandoc -f markdown+lhs -i readme.lhs -t html -o index.html" --exec "pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md" --file-watch
   </code>
 </pre>
 <p>gives you a compile loop!</p>
@@ -20,3 +19,5 @@ stack build --exec "node $(stack path --local-install-root)/bin/readme.jsexe/all
 
 <span class="ot">main ::</span> <span class="dt">IO</span> ()
 main <span class="fu">=</span> putStrLn (<span class="st">&quot;ghcjs rocks!&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)</code></pre></div>
+<h1 id="todo">ToDo</h1>
+<p>Hook ghcjs index.html up so that it gets insta-blogged on push.</p>
