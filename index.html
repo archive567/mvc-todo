@@ -1,0 +1,22 @@
+<h1 id="test-ghcjs">test-ghcjs</h1>
+<p><a href="https://travis-ci.org/tonyday567/test-ghcjs"><img src="https://travis-ci.org/tonyday567/test-ghcjs.png" alt="Build Status" /></a></p>
+<h2 id="test-ghcjs-1">test-ghcjs</h2>
+<p>A bare-minimum ghcjs installation constructed with the following steps:</p>
+<ul class="incremental">
+<li><code>stack new test-ghcjs readme-lhs</code></li>
+<li>edited stack.yaml to grab the <code>ghc-8.0.1</code> ghcjs documented <a href="https://docs.haskellstack.org/en/stable/ghcjs/">here</a>.</li>
+<li><code>stack build</code> compiles readme.lhs aka the code below.</li>
+</ul>
+<p>and that's it!</p>
+<p><code>node $(stack path --local-install-root)/bin/readme.jsexe/all.js</code> checks to see it's all working.</p>
+<p>Incredibly</p>
+<pre>
+  <code style="white-space: pre-wrap;">
+stack build --exec "node $(stack path --local-install-root)/bin/readme.jsexe/all.js" --exec "pandoc -f markdown+lhs -i readme.lhs -t html -o index.html --filter pandoc-include --mathjax" --exec "pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md --filter pandoc-include --mathjax" --file-watch
+  </code>
+</pre>
+<p>gives you a compile loop!</p>
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Protolude</span>
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> putStrLn (<span class="st">&quot;ghcjs rocks!&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)</code></pre></div>
