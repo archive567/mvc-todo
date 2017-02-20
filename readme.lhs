@@ -3,23 +3,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Haskell • GHCJS • Testing</title>
-<link rel="stylesheet" href="other/lhs.css">
+<link rel="stylesheet" href="https://tonyday567.github.io/other/lhs.css">
 
 [ghcjs-testing](https://github.com/tonyday567/ghcjs-testing) [![Build Status](https://travis-ci.org/tonyday567/ghcjs-testing.png)](https://travis-ci.org/tonyday567/ghcjs-testing)
 ===
 
 Minimal ghcjs install and test.
 
+testing area
+---
+
 <h2>test button</h2>
 <button class="click-me">Click me!</button>
 
 <!-- GHCJS scripts. -->
-<script language="javascript" src="other/rts.js"></script>
-<script language="javascript" src="other/lib.js"></script>
-<script language="javascript" src="other/out.js"></script>
-<script language="javascript" src="other/runmain.js"></script>
-</section>
-
+<script language="javascript" src="other/ghcjs-testing.js"></script>
 
 code
 ===
@@ -37,7 +35,7 @@ code
 >   "alert($1)" alert :: JSString -> IO ()
 > 
 > foreign import javascript unsafe "window.onload = $1"
->    onload :: Callback (IO ()) -> IO ()
+>   onload :: Callback (IO ()) -> IO ()
 >
 > main :: IO ()
 > main = do
@@ -46,17 +44,28 @@ code
 > 
 >   w <- currentWindow
 >   case w of
->     Nothing -> putStrLn ("no window in currentWindow" :: Text)
->     Just w' -> alert "an alert"
+>      Nothing -> putStrLn ("no window in currentWindow" :: Text)
+>      Just w' -> alert "an alert"
 > 
 >   -- onload =<< asyncCallback (alert "post window.onload alert!!")
 
-todo
----
+compiling
+===
 
-- [x] an alert
-- [ ] handling no window
-- [x] onload
+The recipe below handles the bits and bobs you need to do every re-compile:
+
+- stack build
+- rendering of the page
+- optimize (and copy) the js via [closure](http://dl.google.com/closure-compiler/compiler-latest.zip)[^closuredownload]
+
+<pre>
+  <code style="white-space: pre-wrap;">
+stack build --exec "pandoc -f markdown+lhs -i readme.lhs -t html -o index.html" --exec "pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/ghcjs-testing.js $(stack path --local-install-root)/bin/readme.jsexe/all.js"
+  </code>
+</pre>
+
+notes
+===
 
 initial setup
 ---
@@ -67,18 +76,8 @@ The repo was constructed using the following steps:
 - edited stack.yaml to grab the `ghc-8.0.1` ghcjs documented [here](https://docs.haskellstack.org/en/stable/ghcjs/).
 - `stack build`
 
-draft compile loop
+found ghcjs examples
 ---
-
-<pre>
-  <code style="white-space: pre-wrap;">
-stack build --exec "node $(stack path --local-install-root)/bin/readme.jsexe/all.js" --exec "pandoc -f markdown+lhs -i readme.lhs -t html -o index.html" --exec "pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md" "cp $(stack path --local-install-root)/bin/readme.jsexe/*.js other" --file-watch
-  </code>
-</pre>
-
-
-ghcjs examples
-===
 
 https://github.com/luite/hs15-talk/blob/master/src/Common.hs
 
@@ -143,11 +142,6 @@ main = do
 component testing (todo)
 ===
 
-closure
----
-
-    java -jar closure-compiler-v20170124.jar --js_output_file=call.js runmain.js out.js lib.js rts.js
-
 react-flux
 ---
 
@@ -163,3 +157,24 @@ Material UI
 ---
 
 http://www.material-ui.com/#/
+
+footnotes
+---
+
+~~~
+<script language="javascript" src="other/rts.js"></script>
+<script language="javascript" src="other/lib.js"></script>
+<script language="javascript" src="other/out.js"></script>
+<script language="javascript" src="other/runmain.js"></script>
+<script language="javascript" src="other/all.js"></script>
+~~~
+
+This doesn't work once you assume a browser window.
+
+<pre>
+  <code style="white-space: pre-wrap;">
+stack build --exec "node $(stack path --local-install-root)/bin/readme.jsexe/all.js"
+  </code>
+</pre>
+
+[^closuredownload]: from http://dl.google.com/closure-compiler/compiler-latest.zip

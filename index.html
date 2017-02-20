@@ -4,9 +4,10 @@
 <title>
 Haskell • GHCJS • Testing
 </title>
-<p><link rel="stylesheet" href="other/lhs.css"></p>
-<h1 id="test-ghcjs-build-status"><a href="https://github.com/tonyday567/test-ghcjs">test-ghcjs</a> <a href="https://travis-ci.org/tonyday567/test-ghcjs"><img src="https://travis-ci.org/tonyday567/test-ghcjs.png" alt="Build Status" /></a></h1>
-<p>ghcjs install and examples.</p>
+<p><link rel="stylesheet" href="https://tonyday567.github.io/other/lhs.css"></p>
+<h1 id="ghcjs-testing-build-status"><a href="https://github.com/tonyday567/ghcjs-testing">ghcjs-testing</a> <a href="https://travis-ci.org/tonyday567/ghcjs-testing"><img src="https://travis-ci.org/tonyday567/ghcjs-testing.png" alt="Build Status" /></a></h1>
+<p>Minimal ghcjs install and test.</p>
+<h2 id="testing-area">testing area</h2>
 <h2>
 test button
 </h2>
@@ -14,12 +15,8 @@ test button
 Click me!
 </button>
 <!-- GHCJS scripts. -->
-<script language="javascript" src="other/rts.js"></script>
-<script language="javascript" src="other/lib.js"></script>
-<script language="javascript" src="other/out.js"></script>
-<script language="javascript" src="other/runmain.js"></script>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">/</span>section<span class="fu">&gt;</span></code></pre></div>
-<h2 id="code">code</h2>
+<script language="javascript" src="other/ghcjs-testing.js"></script>
+<h1 id="code">code</h1>
 <div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
 <span class="kw">import </span><span class="dt">Protolude</span>
 <span class="kw">import </span><span class="dt">GHCJS.Foreign.Callback</span>
@@ -33,48 +30,60 @@ foreign <span class="kw">import </span>javascript unsafe
   <span class="st">&quot;alert($1)&quot;</span><span class="ot"> alert ::</span> <span class="dt">JSString</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
 
 foreign <span class="kw">import </span>javascript unsafe &quot;window.onload = $1&quot;
-<span class="ot">   onload ::</span> <span class="dt">Callback</span> (<span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+<span class="ot">  onload ::</span> <span class="dt">Callback</span> (<span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
 
 <span class="ot">main ::</span> <span class="dt">IO</span> ()
 main <span class="fu">=</span> <span class="kw">do</span>
-  putStrLn (<span class="st">&quot;fuck you&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)
+  putStrLn (<span class="st">&quot;a putStrLn&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)
+  <span class="co">-- consoleLog $ (&quot;a consoleLog&quot;)</span>
+
   w <span class="ot">&lt;-</span> currentWindow
   <span class="kw">case</span> w <span class="kw">of</span>
-    <span class="dt">Nothing</span> <span class="ot">-&gt;</span> putStrLn (<span class="st">&quot;ghcjs rocks out of browser!&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)
-    <span class="dt">Just</span> w&#39; <span class="ot">-&gt;</span> alert <span class="st">&quot;ghc rocks in a browser!&quot;</span>
+     <span class="dt">Nothing</span> <span class="ot">-&gt;</span> putStrLn (<span class="st">&quot;no window in currentWindow&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)
+     <span class="dt">Just</span> w&#39; <span class="ot">-&gt;</span> alert <span class="st">&quot;an alert&quot;</span>
 
-  <span class="co">-- consoleLog $ (&quot;fuck you ghcjs&quot;)</span>
-  <span class="co">-- alert &quot;fuck you too, alert!&quot;</span>
   <span class="co">-- onload =&lt;&lt; asyncCallback (alert &quot;post window.onload alert!!&quot;)</span></code></pre></div>
-<h2 id="todo">todo</h2>
+<h1 id="compiling">compiling</h1>
+<p>The recipe below handles the bits and bobs you need to do every re-compile:</p>
 <ul class="incremental">
-<li>[x] an alert</li>
-<li>[ ] handling no window</li>
-<li>[x] onload</li>
+<li>stack build</li>
+<li>rendering of the page</li>
+<li>optimize (and copy) the js via <a href="http://dl.google.com/closure-compiler/compiler-latest.zip">closure</a><a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></li>
 </ul>
-<h2 id="hacking">hacking</h2>
-<p>The repo was constructed using the following steps:</p>
-<ul class="incremental">
-<li><code>stack new test-ghcjs readme-lhs</code></li>
-<li>edited stack.yaml to grab the <code>ghc-8.0.1</code> ghcjs documented <a href="https://docs.haskellstack.org/en/stable/ghcjs/">here</a>.</li>
-<li><code>stack build</code> compiles readme.lhs aka this file.</li>
-</ul>
-<h2 id="compiling">compiling</h2>
-<p>Incredibly</p>
 <pre>
   <code style="white-space: pre-wrap;">
-stack build --exec "node $(stack path --local-install-root)/bin/readme.jsexe/all.js" --exec "pandoc -f markdown+lhs -i readme.lhs -t html -o index.html" --exec "pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md" "cp $(stack path --local-install-root)/bin/readme.jsexe/*.js other" --file-watch
+stack build --exec "pandoc -f markdown+lhs -i readme.lhs -t html -o index.html" --exec "pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/ghcjs-testing.js $(stack path --local-install-root)/bin/readme.jsexe/all.js"
   </code>
 </pre>
-<p>gives you a complete real-time compile loop!</p>
-<p>{-# LANGUAGE OverloadedStrings #-} import Protolude import GHCJS.Types import GHCJS.Marshal import GHCJS.DOM (currentWindow) import GHCJS.Foreign import GHCJS.Foreign.Callback</p>
-<p>foreign import javascript unsafe &quot;window.onload = $1&quot; jsOnload :: Callback (IO ()) -&gt; IO () foreign import javascript unsafe &quot;alert($1)&quot; alert :: JSString -IO () foreign import javascript unsafe &quot;console.log($1)&quot; clog :: JSString -IO ()</p>
-<p>-- | onload onload :: IO () -&gt; IO () onload f = jsOnload =&lt;&lt; asyncCallback f</p>
-<p>main :: IO () main = do alert &quot;ghcjs sucks!&quot; clog &quot;ghcjs sucks!&quot; w &lt;- currentWindow case w of Nothing -&gt; putStrLn (&quot;ghcjs rocks out of browser!&quot; :: Text) Just w' -&gt; alert &quot;ghc rocks in a browser!&quot; -- putStrLn (&quot;ghcjs rocks!!&quot; :: Text) -- onload (alert &quot;ghcjs rocks!!&quot;)</p>
-<h2 id="actually-useful-ghcjs-examples">Actually useful ghcjs examples</h2>
+<h1 id="notes">notes</h1>
+<h2 id="initial-setup">initial setup</h2>
+<p>The repo was constructed using the following steps:</p>
+<ul class="incremental">
+<li><code>stack new ghcjs-testing readme-lhs</code></li>
+<li>edited stack.yaml to grab the <code>ghc-8.0.1</code> ghcjs documented <a href="https://docs.haskellstack.org/en/stable/ghcjs/">here</a>.</li>
+<li><code>stack build</code></li>
+</ul>
+<h2 id="found-ghcjs-examples">found ghcjs examples</h2>
 <p>https://github.com/luite/hs15-talk/blob/master/src/Common.hs</p>
-<p>https://github.com/mstksg/auto-examples/blob/master/src/TodoJS.hs</p>
-<p>example from ghcjs-dom-hello</p>
+<p><a href="https://github.com/mstksg/auto-examples/blob/master/src/TodoJS.hs">auto</a></p>
+<p>from <a href="https://github.com/ghcjs/ghcjs-base">ghcjs-base</a>:</p>
+<pre><code>import GHCJS.Foreign.Callback
+import Data.JSString -- This includes an IsString instance for JSString
+import GHCJS.Types (JSVal)
+
+foreign import javascript unsafe
+  &quot;require(&#39;console&#39;).log($1)&quot; js_consoleLog :: JSVal -&gt; IO ()
+
+foreign import javascript unsafe
+  &quot;require(&#39;fs&#39;).stat($1, $2)&quot;
+  js_fsStat :: JSString -&gt; Callback (JSVal -&gt; JSVal -&gt; IO ()) -&gt; IO ()
+
+main :: IO ()
+main = do
+  cb &lt;- asyncCallback2 $ \err stat -&gt; js_consoleLog stat
+  js_fsStat &quot;/home&quot; cb
+  releaseCallback cb</code></pre>
+<p>from <a href="https://github.com/ghcjs/ghcjs-dom-hello">ghcjs-dom-hello</a></p>
 <pre><code>main = do
   putStrLn &quot;&lt;a href=\&quot;http://localhost:3708/\&quot;&gt;http://localhost:3708/&lt;/a&gt;&quot;
   run 3708 $ do
@@ -105,28 +114,29 @@ stack build --exec "node $(stack path --local-install-root)/bin/readme.jsexe/all
     liftIO $ takeMVar exitMVar
     setInnerHTML body (Just &quot;&lt;h1&gt;Ka kite ano (See you later)&lt;/h1&gt;&quot;)
     return ()</code></pre>
-<p>example in https://github.com/ghcjs/ghcjs-base</p>
-<pre><code>import GHCJS.Foreign.Callback
-import Data.JSString -- This includes an IsString instance for JSString
-import GHCJS.Types (JSVal)
-
-foreign import javascript unsafe
-  &quot;require(&#39;console&#39;).log($1)&quot; js_consoleLog :: JSVal -&gt; IO ()
-
-foreign import javascript unsafe
-  &quot;require(&#39;fs&#39;).stat($1, $2)&quot;
-  js_fsStat :: JSString -&gt; Callback (JSVal -&gt; JSVal -&gt; IO ()) -&gt; IO ()
-
-main :: IO ()
-main = do
-  cb &lt;- asyncCallback2 $ \err stat -&gt; js_consoleLog stat
-  js_fsStat &quot;/home&quot; cb
-  releaseCallback cb</code></pre>
-<p>todo <sub>~</sub></p>
-<pre><code>java -jar closure-compiler-v20170124.jar --js_output_file=call.js runmain.js out.js lib.js rts.js
-
-&lt;script language=&quot;javascript&quot; src=&quot;other/rts.js&quot;&gt;&lt;/script&gt;
+<h1 id="component-testing-todo">component testing (todo)</h1>
+<h2 id="react-flux">react-flux</h2>
+<p>http://blog.wuzzeb.org/full-stack-web-haskell/client.html</p>
+<p>https://facebook.github.io/flux/docs/in-depth-overview.html#content</p>
+<p>http://hackage.haskell.org/package/react-flux</p>
+<p>https://bitbucket.org/wuzzeb/react-flux/src/tip/example/</p>
+<h2 id="material-ui">Material UI</h2>
+<p>http://www.material-ui.com/#/</p>
+<h2 id="footnotes">footnotes</h2>
+<pre><code>&lt;script language=&quot;javascript&quot; src=&quot;other/rts.js&quot;&gt;&lt;/script&gt;
 &lt;script language=&quot;javascript&quot; src=&quot;other/lib.js&quot;&gt;&lt;/script&gt;
 &lt;script language=&quot;javascript&quot; src=&quot;other/out.js&quot;&gt;&lt;/script&gt;
-&lt;script language=&quot;javascript&quot; src=&quot;other/runmain.js&quot;&gt;&lt;/script&gt;</code></pre>
-<p>http://blog.wuzzeb.org/full-stack-web-haskell/client.html</p>
+&lt;script language=&quot;javascript&quot; src=&quot;other/runmain.js&quot;&gt;&lt;/script&gt;
+&lt;script language=&quot;javascript&quot; src=&quot;other/all.js&quot;&gt;&lt;/script&gt;</code></pre>
+<p>This doesn't work once you assume a browser window.</p>
+<pre>
+  <code style="white-space: pre-wrap;">
+stack build --exec "node $(stack path --local-install-root)/bin/readme.jsexe/all.js"
+  </code>
+</pre>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>from http://dl.google.com/closure-compiler/compiler-latest.zip<a href="#fnref1">↩</a></p></li>
+</ol>
+</div>

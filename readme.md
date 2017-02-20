@@ -5,12 +5,15 @@
 <title>
 Haskell • GHCJS • Testing
 </title>
-<link rel="stylesheet" href="other/lhs.css">
+<link rel="stylesheet" href="https://tonyday567.github.io/other/lhs.css">
 
-[test-ghcjs](https://github.com/tonyday567/test-ghcjs) [![Build Status](https://travis-ci.org/tonyday567/test-ghcjs.png)](https://travis-ci.org/tonyday567/test-ghcjs)
-======================================================================================================================================================================
+[ghcjs-testing](https://github.com/tonyday567/ghcjs-testing) [![Build Status](https://travis-ci.org/tonyday567/ghcjs-testing.png)](https://travis-ci.org/tonyday567/ghcjs-testing)
+==================================================================================================================================================================================
 
-ghcjs install and examples.
+Minimal ghcjs install and test.
+
+testing area
+------------
 
 <h2>
 test button
@@ -19,16 +22,9 @@ test button
 Click me!
 </button>
 <!-- GHCJS scripts. -->
-<script language="javascript" src="other/rts.js"></script>
-<script language="javascript" src="other/lib.js"></script>
-<script language="javascript" src="other/out.js"></script>
-<script language="javascript" src="other/runmain.js"></script>
-``` {.sourceCode .haskell}
-/section>
-```
-
+<script language="javascript" src="other/ghcjs-testing.js"></script>
 code
-----
+====
 
 ``` {.sourceCode .literate .haskell}
 {-# LANGUAGE OverloadedStrings #-}
@@ -44,75 +40,77 @@ foreign import javascript unsafe
   "alert($1)" alert :: JSString -> IO ()
 
 foreign import javascript unsafe "window.onload = $1"
-   onload :: Callback (IO ()) -> IO ()
+  onload :: Callback (IO ()) -> IO ()
 
 main :: IO ()
 main = do
-  putStrLn ("fuck you" :: Text)
+  putStrLn ("a putStrLn" :: Text)
+  -- consoleLog $ ("a consoleLog")
+
   w <- currentWindow
   case w of
-    Nothing -> putStrLn ("ghcjs rocks out of browser!" :: Text)
-    Just w' -> alert "ghc rocks in a browser!"
+     Nothing -> putStrLn ("no window in currentWindow" :: Text)
+     Just w' -> alert "an alert"
 
-  -- consoleLog $ ("fuck you ghcjs")
-  -- alert "fuck you too, alert!"
   -- onload =<< asyncCallback (alert "post window.onload alert!!")
 ```
 
-todo
-----
-
--   \[x\] an alert
--   \[ \] handling no window
--   \[x\] onload
-
-hacking
--------
-
-The repo was constructed using the following steps:
-
--   `stack new test-ghcjs readme-lhs`
--   edited stack.yaml to grab the `ghc-8.0.1` ghcjs documented
-    [here](https://docs.haskellstack.org/en/stable/ghcjs/).
--   `stack build` compiles readme.lhs aka this file.
-
 compiling
----------
+=========
 
-Incredibly
+The recipe below handles the bits and bobs you need to do every
+re-compile:
+
+-   stack build
+-   rendering of the page
+-   optimize (and copy) the js via
+    [closure](http://dl.google.com/closure-compiler/compiler-latest.zip)[^1]
 
 <pre>
   <code style="white-space: pre-wrap;">
-stack build --exec "node $(stack path --local-install-root)/bin/readme.jsexe/all.js" --exec "pandoc -f markdown+lhs -i readme.lhs -t html -o index.html" --exec "pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md" "cp $(stack path --local-install-root)/bin/readme.jsexe/*.js other" --file-watch
+stack build --exec "pandoc -f markdown+lhs -i readme.lhs -t html -o index.html" --exec "pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/ghcjs-testing.js $(stack path --local-install-root)/bin/readme.jsexe/all.js"
   </code>
 </pre>
-gives you a complete real-time compile loop!
+notes
+=====
 
-{-\# LANGUAGE OverloadedStrings \#-} import Protolude import GHCJS.Types
-import GHCJS.Marshal import GHCJS.DOM (currentWindow) import
-GHCJS.Foreign import GHCJS.Foreign.Callback
+initial setup
+-------------
 
-foreign import javascript unsafe "window.onload = \$1" jsOnload ::
-Callback (IO ()) -&gt; IO () foreign import javascript unsafe
-"alert(\$1)" alert :: JSString -IO () foreign import javascript unsafe
-"console.log(\$1)" clog :: JSString -IO ()
+The repo was constructed using the following steps:
 
--- | onload onload :: IO () -&gt; IO () onload f = jsOnload =&lt;&lt;
-asyncCallback f
+-   `stack new ghcjs-testing readme-lhs`
+-   edited stack.yaml to grab the `ghc-8.0.1` ghcjs documented
+    [here](https://docs.haskellstack.org/en/stable/ghcjs/).
+-   `stack build`
 
-main :: IO () main = do alert "ghcjs sucks!" clog "ghcjs sucks!" w &lt;-
-currentWindow case w of Nothing -&gt; putStrLn ("ghcjs rocks out of
-browser!" :: Text) Just w' -&gt; alert "ghc rocks in a browser!" --
-putStrLn ("ghcjs rocks!!" :: Text) -- onload (alert "ghcjs rocks!!")
-
-Actually useful ghcjs examples
-------------------------------
+found ghcjs examples
+--------------------
 
 https://github.com/luite/hs15-talk/blob/master/src/Common.hs
 
-https://github.com/mstksg/auto-examples/blob/master/src/TodoJS.hs
+[auto](https://github.com/mstksg/auto-examples/blob/master/src/TodoJS.hs)
 
-example from ghcjs-dom-hello
+from [ghcjs-base](https://github.com/ghcjs/ghcjs-base):
+
+    import GHCJS.Foreign.Callback
+    import Data.JSString -- This includes an IsString instance for JSString
+    import GHCJS.Types (JSVal)
+
+    foreign import javascript unsafe
+      "require('console').log($1)" js_consoleLog :: JSVal -> IO ()
+
+    foreign import javascript unsafe
+      "require('fs').stat($1, $2)"
+      js_fsStat :: JSString -> Callback (JSVal -> JSVal -> IO ()) -> IO ()
+
+    main :: IO ()
+    main = do
+      cb <- asyncCallback2 $ \err stat -> js_consoleLog stat
+      js_fsStat "/home" cb
+      releaseCallback cb
+
+from [ghcjs-dom-hello](https://github.com/ghcjs/ghcjs-dom-hello)
 
     main = do
       putStrLn "<a href=\"http://localhost:3708/\">http://localhost:3708/</a>"
@@ -145,32 +143,40 @@ example from ghcjs-dom-hello
         setInnerHTML body (Just "<h1>Ka kite ano (See you later)</h1>")
         return ()
 
-example in https://github.com/ghcjs/ghcjs-base
+component testing (todo)
+========================
 
-    import GHCJS.Foreign.Callback
-    import Data.JSString -- This includes an IsString instance for JSString
-    import GHCJS.Types (JSVal)
+react-flux
+----------
 
-    foreign import javascript unsafe
-      "require('console').log($1)" js_consoleLog :: JSVal -> IO ()
+http://blog.wuzzeb.org/full-stack-web-haskell/client.html
 
-    foreign import javascript unsafe
-      "require('fs').stat($1, $2)"
-      js_fsStat :: JSString -> Callback (JSVal -> JSVal -> IO ()) -> IO ()
+https://facebook.github.io/flux/docs/in-depth-overview.html\#content
 
-    main :: IO ()
-    main = do
-      cb <- asyncCallback2 $ \err stat -> js_consoleLog stat
-      js_fsStat "/home" cb
-      releaseCallback cb
+http://hackage.haskell.org/package/react-flux
 
-todo ~\~~
+https://bitbucket.org/wuzzeb/react-flux/src/tip/example/
 
-    java -jar closure-compiler-v20170124.jar --js_output_file=call.js runmain.js out.js lib.js rts.js
+Material UI
+-----------
+
+http://www.material-ui.com/\#/
+
+footnotes
+---------
 
     <script language="javascript" src="other/rts.js"></script>
     <script language="javascript" src="other/lib.js"></script>
     <script language="javascript" src="other/out.js"></script>
     <script language="javascript" src="other/runmain.js"></script>
+    <script language="javascript" src="other/all.js"></script>
 
-http://blog.wuzzeb.org/full-stack-web-haskell/client.html
+This doesn't work once you assume a browser window.
+
+<pre>
+  <code style="white-space: pre-wrap;">
+stack build --exec "node $(stack path --local-install-root)/bin/readme.jsexe/all.js"
+  </code>
+</pre>
+
+[^1]: from http://dl.google.com/closure-compiler/compiler-latest.zip
