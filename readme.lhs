@@ -10,7 +10,7 @@
 
 Minimal ghcjs install and test.
 
-This is old-school web page development: grab some html page, and create some javascript that tweaks said page.
+This is old-school web page development: grab some html page, and create some javascript that tweaks said page. This page starts off as a literate haskell file, gets built as a ghcjs piece of javascript, and then gets rendered as the said html page being tweaked.
 
 testing area
 ---
