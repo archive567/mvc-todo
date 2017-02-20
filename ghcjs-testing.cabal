@@ -1,7 +1,7 @@
 name:
-  test-ghcjs
+  ghcjs-testing
 version:
-  0.1.0.0
+  0.1.0
 synopsis:
   See readme.lhs
 description:
@@ -9,7 +9,7 @@ description:
 category:
   project
 homepage:
-  https://github.com/tonyday567/test-ghcjs
+  https://github.com/tonyday567/ghcjs-testing
 license:
   BSD3
 license-file:
@@ -86,7 +86,9 @@ executable readme
   build-depends:
     base >= 4.7 && < 5,
     protolude,
-    test-ghcjs
+    ghcjs-testing,
+    ghcjs-base,
+    ghcjs-dom
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
@@ -125,4 +127,4 @@ source-repository head
   type:
     git
   location:
-    https://github.com/tonyday567/test-ghcjs
+    https://github.com/tonyday567/ghcjs-testing

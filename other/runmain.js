@@ -1,0 +1,1 @@
+/Users/tonyday/git/test-ghcjs/.stack-work/install/x86_64-osx/lts-7.15/ghcjs-0.2.1.9007015_ghc-8.0.1/bin/readme.jsexe/runmain.js
