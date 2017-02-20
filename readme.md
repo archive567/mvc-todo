@@ -12,6 +12,9 @@ Haskell • GHCJS • Testing
 
 Minimal ghcjs install and test.
 
+This is old-school web page development: grab some html page, and create
+some javascript that tweaks said page.
+
 testing area
 ------------
 
