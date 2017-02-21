@@ -18,12 +18,17 @@ language: generic
 cache:
   directories:
   - $HOME/.stack
+  - $HOME/.ghcjs
+  - $HOME/.ghc
+  - $HOME/.cabal
 
 # Ensure necessary system libraries are present
 addons:
   apt:
     packages:
       - libgmp-dev
+
+env: STACK_YAML=stack-travis.yaml
 
 before_install:
 # Download and unpack the stack executable
@@ -33,7 +38,7 @@ before_install:
 
 install:
 # Build dependencies
-- stack --no-terminal --install-ghc test --only-dependencies --ghc-options -j1
+- stack --no-terminal --install-ghc test --only-dependencies
 
 script:
 # Build the package, its tests, and its docs and run the tests
