@@ -6,29 +6,12 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 
 module GHCJS.Extended 
-  ( 
-    -- maybeJSNull 
-    Element
-  , Event
-  , UIEvent
+  ( Element
   , Selector
-  , element
-  , element'
-  , elementOf
-  , on
-  , onWindow
-  , delegate
   , addClass
   , removeClass
-  , setValue
-  , getValue
-  , setHtml
-  , itemId
-  , focusElement
-  , getHash
-  , keyCode
-  , maybeToNullable
-  , nullableToMaybe
+  , JSVal
+  , toJSVal
   ) where
 
 import Clay.Render (renderSelector)
@@ -39,7 +22,6 @@ import Data.Foldable
 import Data.Maybe (fromJust)
 import Data.Typeable
 import Lucid
-import Prelude (String)
 import Protolude hiding (Selector, on)
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -52,51 +34,49 @@ import GHCJS.Foreign
 import GHCJS.Foreign.Callback
 import Data.JSString.Text (textToJSString, textFromJSString, lazyTextToJSString, lazyTextFromJSString)
 
-import GHCJS.DOM
-
-import GHCJS.DOM.Types hiding (Text)
-
-import qualified GHCJS.DOM.EventM as E (EventM(..), on)
-import GHCJS.DOM.UIEvent (UIEvent(..), getKeyCode)
-import GHCJS.DOM.EventTarget (addEventListener)
-import GHCJS.DOM.DOMTokenList (add, remove)
-import GHCJS.DOM.NodeList (item)
-import qualified GHCJS.DOM.Location as Loc (getHash)
-import GHCJS.DOM.Element (getClassList, setInnerHTML, querySelectorAll, focus, querySelector, getDataset, getId)
-import qualified GHCJS.DOM.Document as Doc (querySelector, getLocation)
-import GHCJS.Types (JSString)
-import GHCJS.DOM.Types (ToJSString(..), FromJSString(..))
-import GHCJS.DOM.EventTargetClosures (EventName)
+data Element = Element JSVal
 
 fromHtml = lazyTextToJSString . renderText
 
 fromSel = lazyTextToJSString . renderSelector
 
--- * common syncing patterns in calling javascript functions from haskell
+-- * ubiquitous
+-- | console.log
+foreign import javascript unsafe
+    "console.log($1)"
+    js_consoleLog :: JSString -> IO ()
 
--- | no arguments
-sync :: IO () -> IO (Callback (IO ()))
-sync f = syncCallback ContinueAsync f
+consoleLog :: Text -> IO ()
+consoleLog a = js_consoleLog (textToJSString a)
 
--- | one (javascript value) argument
-sync1 :: (JSVal -> IO ()) -> IO (Callback (JSVal -> IO ()))
-sync1 f = syncCallback1 ContinueAsync f
 
 -- * element manipulation
+foreign import javascript unsafe
+    "$1.classList.add($2)"
+    js_classListAdd :: JSVal -> JSString -> IO ()
 
 addClass :: Element -> Selector -> IO ()
-addClass el sel = do
-    l <- getClassList el
-    maybe (pure ()) (\x -> add x [fromSel sel]) l
+addClass (Element el) sel =
+    js_classListAdd el (fromSel sel)
+
+foreign import javascript unsafe
+    "$1.classList.remove($2)"
+    js_classListRemove :: JSVal -> JSString -> IO ()
 
 removeClass :: Element -> Selector -> IO ()
-removeClass el sel =  do
-    l <- getClassList el
-    maybe (pure ()) (\x -> remove x [fromSel sel]) l
+removeClass (Element el) sel =
+    js_classListRemove el (fromSel sel)
+
+foreign import javascript unsafe
+    "$1.innerHTML = $2"
+    js_innerHtml :: JSVal -> JSString -> IO ()
 
 setHtml :: Element -> Html () -> IO ()
-setHtml el html =
-    setInnerHTML el $ Just (fromHtml html)
+setHtml (Element el) html =
+    js_innerHtml el (fromHtml html)
+
+
+{-
 
 -- | element selection
 element :: Selector -> IO (Maybe Element)
@@ -123,11 +103,6 @@ elementOf el sel = do
 focusElement :: Element -> IO ()
 focusElement el = focus el
 
--- | console.log
-foreign import javascript unsafe "console.log($1)" js_consoleLog :: JSString -> IO ()
-
-consoleLog :: Text -> IO ()
-consoleLog a = js_consoleLog (textToJSString a)
 
 foreign import javascript unsafe "$1[\"value\"]" js_getValue :: Element -> IO JSString
 
@@ -139,7 +114,9 @@ foreign import javascript unsafe "$1[\"value\"] = $2" js_setValue :: Element -> 
 setValue :: Element -> Text -> IO ()
 setValue el val = js_setValue el (textToJSString val)
 
-foreign import javascript unsafe "$1.dataset.id" js_getDatasetId :: Element -> IO (Nullable Int)
+foreign import javascript unsafe
+    "$1.dataset.id"
+    js_getDatasetId :: Element -> IO (Nullable Int)
 
 itemId :: Element -> IO (Maybe Int)
 itemId el = do
@@ -149,7 +126,7 @@ getItem :: NodeList -> Int -> IO (Maybe Node)
 getItem list n =
   item list (fromIntegral n)
 
-keyCode :: UIEvent -> IO Int
+keyCode :: JSVal -> IO Int
 keyCode ev = getKeyCode ev
 
 getHash :: IO (Maybe JSString)
@@ -166,38 +143,28 @@ getHash = do
                 pure $ Just h
 
 -- * event listening
-foreign import javascript unsafe "$1.addEventListener($2,$3,$4)" jsext_addEventListener :: Element -> JSString -> Callback (JSVal -> IO ()) -> Bool -> IO ()
+foreign import javascript unsafe
+    "$1.addEventListener($2,$3,$4)"
+    js_addEventListener :: JSVal -> JSString -> (JSVal -> IO ()) -> Bool -> IO ()
 
+{-
 on :: (IsEvent ev) => Element -> Text -> (Element -> E.EventM Element ev ()) -> IO (IO ()) 
 on el uiAction handler = do
     rel <- E.on el (E.EventName uiAction) (handler el)
     pure rel
-    
+-}
+
+on :: Element -> Text -> (Element -> JSVal -> IO ()) -> IO () 
+on el uiAction handler = do
+  handler' <- syncCallback1 ContinueAsync (handler el)
+  js_addEventListener el (toJSString uiAction) handler' False
+
+
 -- up to here
 onWindow = undefined
 delegate = undefined
 
-foreign import javascript unsafe "$1.parentElement" jsParentElement :: Element -> IO (Element)
-foreign import javascript unsafe "$1.querySelector($2)" jsElementQuerySelector :: Element -> JSString -> IO (Element)
-foreign import javascript unsafe "$1.querySelectorAll($2)" jsQuerySelectorAll :: Element -> JSString -> IO (NodeList)
-foreign import javascript unsafe "$1.tagName" jsTagName :: Element -> IO (Nullable JSString)
-foreign import javascript unsafe "$1===$2" jsEq :: JSVal -> JSVal -> IO Bool
-foreign import javascript unsafe "$1.length" jsLength :: NodeList -> IO Int
-foreign import javascript unsafe "$1.checked" jsChecked :: Element -> IO (Bool)
-foreign import javascript unsafe "$1.innerHTML = $2" jsSetHtml :: (Element) -> JSString -> IO ()
-foreign import javascript unsafe "$1.item($2)" jsItem :: NodeList -> Word -> IO (Element)
-foreign import javascript unsafe "$1.keyCode" jsKeyCode :: Event -> IO Int
-foreign import javascript unsafe "$1.target" jsTarget :: Event -> IO (Element)
-foreign import javascript unsafe "document.location.hash" jsGetHash :: IO (JSString)
-foreign import javascript unsafe "document.querySelector($1)" jsQuerySelector :: JSString -> IO Element
-foreign import javascript unsafe "window.addEventListener($1,$2,$3)" jsWindowAddEventListener :: JSString -> Callback (JSVal -> IO ()) -> JSVal -> IO ()
-foreign import javascript unsafe "window.onload = $1" jsOnload :: Callback (IO ()) -> IO ()
-
-
-
 -- * common idioms
-
-
 {-
 
 -- * manipulating dom
@@ -208,13 +175,6 @@ on el uiAction handler = do
   handler' <- sync1 (handler el)
   jsAddEventListener el (toJSString uiAction) handler' (toJSBool False)
 
-onWindow :: String -> (JSVal -> Event -> IO ()) -> IO ()
-onWindow uiAction handler = do
-  handler' <- sync1 (handler jsNull)
-  jsWindowAddEventListener
-    (toJSString uiAction) 
-    handler'
-    (toJSBool False)
 
 delegate :: Element -> Selector -> String -> (Element -> Event -> IO ()) -> IO ()
 delegate base pattern0 ev action = do
@@ -267,3 +227,27 @@ findM p = fmap (getFirst . fold) . mapM
 
 
 -}
+
+
+foreign import javascript unsafe "$1.dataset.id" js_id :: JSVal -> IO JSString
+foreign import javascript unsafe "$1.focus()" js_focus :: JSVal -> IO ()
+foreign import javascript unsafe "$1.parentElement" js_parentElement :: JSVal -> IO JSVal
+foreign import javascript unsafe "$1.querySelector($2)" js_elementQuerySelector :: JSVal -> JSString -> IO JSVal
+foreign import javascript unsafe "$1.querySelectorAll($2)" js_querySelectorAll :: JSVal -> JSString -> IO JSVal
+foreign import javascript unsafe "$1.tagName" js_tagName :: JSVal -> IO JSString
+foreign import javascript unsafe "$1===$2" js_eq :: JSVal a -> JSVal -> IO Bool
+foreign import javascript unsafe "$1.length" js_length :: JSVal -> IO Int
+foreign import javascript unsafe "$1.value" js_getValue :: JSVal -> IO JSString
+foreign import javascript unsafe "$1.value = $2" js_setValue :: JSVal -> JSString -> IO ()
+foreign import javascript unsafe "$1.checked" js_checked :: JSVal -> IO Bool
+foreign import javascript unsafe "$1.item($2)" js_item :: JSVal -> Word -> IO JSVal
+foreign import javascript unsafe "$1.keyCode" js_keyCode :: JSVal -> IO Int
+foreign import javascript unsafe "$1.target" js_target :: JSVal -> IO JSVal
+foreign import javascript unsafe "console.log($1)" js_consoleLog :: JSString -> IO ()
+foreign import javascript unsafe "document.location.hash" js_getHash :: IO JSString
+foreign import javascript unsafe "document.querySelector($1)" js_querySelector :: JSString -> IO JSVal
+foreign import javascript unsafe "window.addEventListener($1,$2,$3)" js_windowAddEventListener :: JSString -> (JSVal -> IO ()) -> Bool -> IO ()
+foreign import javascript unsafe "window.onload = $1" js_onload :: CallBack (IO ()) -> IO ()
+
+-}
+
