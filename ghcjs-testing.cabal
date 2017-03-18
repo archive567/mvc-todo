@@ -26,16 +26,46 @@ cabal-version:
   >=1.14
 extra-source-files:
   stack.yaml
+
+flag no-ghcjs
+     description:   compiling without ghcjs
+     default:       False
+
 library
   default-language:
     Haskell2010
   ghc-options:
   hs-source-dirs:      
-
+    src
   exposed-modules:
-
+    GHCJS.Extended,
+    Control.Error.Extended
+    Todo.Arbitrary,
+    Todo.Controllers,
+    Todo.Model,
+    Todo.Views
   build-depends:
-    base >= 4.7 && < 5
+    base >= 4.7 && < 5,
+    protolude,
+    clay,
+    text,
+    lucid,
+    lens,
+    mtl,
+    data-default,
+    containers,
+    pipes,
+    QuickCheck,
+    errors,
+    mmorph,
+    either,
+    mvc
+  if !flag(no-ghcjs)
+    build-depends:
+      ghcjs-base,
+      ghcjs-dom,
+      ghcjs-dom-jsffi
+
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
@@ -86,9 +116,12 @@ executable readme
   build-depends:
     base >= 4.7 && < 5,
     protolude,
-    ghcjs-testing,
-    ghcjs-base,
-    ghcjs-dom
+    ghcjs-testing
+  if !flag(no-ghcjs)
+    build-depends:
+      ghcjs-base,
+      ghcjs-dom,
+      ghcjs-dom-jsffi
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
