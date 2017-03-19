@@ -2,15 +2,15 @@
 
 module Main where
 
-import qualified Data.Map as Map
-import           GHCJS.Extended (onload)
-import           MVC hiding ((<>))
-import           MVC.Prelude as MVC
-import           Todo.Controllers (controllers)
-import           Todo.Model
-import           Todo.Views (render)
 import Control.Monad.Trans.State.Strict (State, StateT)
+import MVC hiding ((<>))
+import MVC.Prelude as MVC
 import Protolude hiding (State, StateT, loop)
+import Todo.Controllers (controllers)
+import Todo.Model
+import Todo.Vanilla (onload)
+import Todo.Views (render)
+import qualified Data.Map as Map
 
 main :: IO ()
 main = onload (void run)

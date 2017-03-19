@@ -5,17 +5,27 @@ module Todo.Views
   ( render
   ) where
 
-import           Control.Lens hiding (element, elementOf, itemText, itemStatus)
-import           Control.Monad (join)
-import           Data.Foldable (sequenceA_)
-import qualified Data.Map as Map
--- import           Data.Monoid
-import           Data.Text (pack)
-import           GHCJS.Extended (Element(..), docElement, addClass, removeClass, Selector, setValue, setHtml, focus, elementOf)
-import           Lucid hiding (for_)
-import           Todo.Model
+import Todo.Vanilla
+    ( Element(..)
+    , docElement
+    , addClass
+    , removeClass
+    , Selector
+    , setValue
+    , setHtml
+    , focus
+    , elementOf
+    )
+
+import Control.Lens hiding (element, elementOf, itemText, itemStatus)
+import Control.Monad (join)
+import Data.Foldable (sequenceA_)
+import Data.Text (pack)
+import Lucid hiding (for_)
 import Protolude hiding (on, Selector)
+import Todo.Model
 import qualified Clay.Selector as Clay
+import qualified Data.Map as Map
 
 render :: Todos -> IO ()
 render = sequenceRenderers renderers

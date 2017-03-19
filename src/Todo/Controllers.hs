@@ -4,7 +4,20 @@
 
 module Todo.Controllers where
 
-import GHCJS.Extended (docElement, onWindow, on, delegate, Element(..), keyCode, itemId, getHash, elementOf, getValue, JSVal, toJSVal)
+import Todo.Vanilla
+    ( docElement
+    , onWindow
+    , on
+    , delegate
+    , Element(..)
+    , keyCode
+    , itemId
+    , getHash
+    , elementOf
+    , getValue
+    , JSVal
+    , toJSVal)
+
 import MVC hiding ((<>))
 import Todo.Model
 import Protolude hiding (on)

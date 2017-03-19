@@ -26,15 +26,13 @@ module Todo.Model
   , model
   ) where
 
-import           Control.Lens
--- import           Control.Monad
--- import           Control.Monad.State.Strict
-import           Data.Default
-import qualified Data.Map as Map
--- import           Data.Monoid
-import           Pipes
+import Control.Lens
 import Control.Monad.Trans.State.Strict (State, StateT)
+import Data.Default
+import Pipes
 import Protolude hiding (State, StateT, loop)
+
+import qualified Data.Map as Map
 
 -- * ADTs
 data ItemStatus 

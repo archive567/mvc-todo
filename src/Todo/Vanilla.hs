@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 
-module GHCJS.Extended 
+module Todo.Vanilla
   ( Element(..)
   , Selector
   , consoleLog
@@ -21,6 +21,7 @@ module GHCJS.Extended
   , setValue
   , itemId
   , focus
+  , checked
   , keyCode
   , getHash
   , on
@@ -180,6 +181,13 @@ foreign import javascript unsafe
 
 getHash :: IO JSString
 getHash = js_getHash
+
+foreign import javascript unsafe
+    "$1.checked"
+    js_checked :: JSVal -> IO Bool
+
+checked :: Element -> IO Bool
+checked (Element el) = js_checked el
 
 -- * event listening
 foreign import javascript unsafe

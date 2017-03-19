@@ -33,7 +33,7 @@ library
   hs-source-dirs:      
     src
   exposed-modules:
-    GHCJS.Extended,
+    Todo.Vanilla,
     Todo.Arbitrary,
     Todo.Controllers,
     Todo.Model,
@@ -91,7 +91,7 @@ library
     TypeFamilies,
     TypeOperators
 
-executable readme
+executable mvc-todo
   default-language:
     Haskell2010
   ghc-options:
@@ -101,9 +101,9 @@ executable readme
     -rtsopts
     -with-rtsopts=-N
   hs-source-dirs:
-    ./
+    apps
   main-is:
-    readme.lhs
+    mvc-todo.hs
   build-depends:
     base >= 4.7 && < 5,
     protolude,
@@ -146,7 +146,7 @@ executable readme
     TypeFamilies,
     TypeOperators
 
-executable mvc-todo
+executable mvc-todo-auto
   default-language:
     Haskell2010
   ghc-options:
@@ -158,7 +158,7 @@ executable mvc-todo
   hs-source-dirs:
     apps
   main-is:
-    mvc-todo.hs
+    mvc-todo-auto.hs
   build-depends:
     base >= 4.7 && < 5,
     protolude,
@@ -166,7 +166,9 @@ executable mvc-todo
     ghcjs-base,
     containers,
     mvc,
-    transformers
+    transformers,
+    lens,
+    QuickCheck
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
