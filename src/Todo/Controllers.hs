@@ -4,8 +4,7 @@
 
 module Todo.Controllers where
 
-import Control.Error.Extended (runEitherT, EitherT(..))
-import GHCJS.Extended (UIEvent, element', onWindow, on, delegate, Element, Event, keyCode, itemId, getHash, elementOf, getValue, JSVal, toJSVal)  
+import GHCJS.Extended (docElement, onWindow, on, delegate, Element(..), keyCode, itemId, getHash, elementOf, getValue, JSVal, toJSVal)
 import MVC hiding ((<>))
 import Todo.Model
 import Protolude hiding (on)
@@ -18,33 +17,30 @@ toKeys n = case n of
   27 -> Escape
   _  -> SomethingElse
 
-send' :: Output a -> a -> IO ()
-send' o action = void $ atomically $ send o action
+sendAction :: a -> Output a -> IO ()
+sendAction action o = void $ atomically $ send o action
 
-controllers :: Output Action -> ExceptT Text IO ()
+controllers :: Output Action -> IO ()
 controllers o = do
-  toggleAll <- element' ".toggle-all"
-  clearCompleted <- element' ".clear-completed"
-  newTodo <- element' ".new-todo"
-  todos' <- element' ".todo-list"
-  lift $ do
-    onWindow "load" (ctl Refresh o)
-    onWindow "hashchange" (ctlHash o)
-    on toggleAll "click" (ctl ToggleAll o)
-    on clearCompleted "click" (ctl ClearCompleted o)
-    on newTodo "keyup" (ctlNewItem o)
-    delegate todos' ".destroy" "click" (ctlId DeleteItem o)
-    delegate todos' ".toggle" "change" (ctlId Toggle o)
-    delegate todos' "label" "dblclick" (ctlId EditItem o)
-    delegate todos' ".edit" "blur" (ctlEditItemDone o)
-    delegate todos' ".edit" "keyup" (ctlEditKeyup o)
+  toggleAll <- docElement ".toggle-all"
+  clearCompleted <- docElement ".clear-completed"
+  newTodo <- docElement ".new-todo"
+  todos' <- docElement ".todo-list"
+  onWindow "load" (const $ sendAction Refresh o)
+  onWindow "hashchange" (const $ ctlHash o)
+  on toggleAll "click" (const $ const $ sendAction ToggleAll o)
+  on clearCompleted "click" (const $ const $ sendAction ClearCompleted o)
+  on newTodo "keyup" (ctlNewItem o)
+  delegate todos' ".destroy" "click" (\el _ -> ctlId DeleteItem o el)
+  delegate todos' ".toggle" "change" (\el _ -> ctlId Toggle o el)
+  delegate todos' "label" "dblclick" (\el _ -> ctlId EditItem o el)
+  delegate todos' ".edit" "blur" (ctlEditItemDone o)
+  delegate todos' ".edit" "keyup" (ctlEditKeyup o)
 
-ctl :: Action -> Output Action -> Element -> JSVal -> IO ()
-ctl a o _ _ = send' o a
-
-ctlId :: (ItemId -> Action) -> Output Action -> Element -> UIEvent
-    -> IO ()
-ctlId action o el _ = send' o =<< idTagged action el
+ctlId :: (ItemId -> Action) -> Output Action -> Element -> IO ()
+ctlId action o el = do
+    a_ <- idTagged action el
+    sendAction a_ o
 
 idTagged :: (ItemId -> Action) -> Element -> IO Action
 idTagged action el = do
@@ -58,36 +54,31 @@ ctlEditKeyup o el ev = do
   code <- keyCode ev
   case toKeys code of
     Enter -> ctlEditItemDone o el ev
-    Escape -> ctlId EditItemCancel o el ev
+    Escape -> ctlId EditItemCancel o el
     _ -> pure ()
 
 ctlEditItemDone :: Output Action -> Element -> JSVal -> IO ()
 ctlEditItemDone o el _ = do
   box <- elementOf el ".edit"
-  case box of
-    Nothing -> pure ()
-    Just box' -> do
-        value <- getValue box'
-        send' o =<< idTagged (\x -> EditItemDone x value) el
-
-ctlHash :: Output Action -> Element -> JSVal -> IO ()
-ctlHash o _ _ = do
+  value <- getValue (Element box)
+  a_ <- idTagged (\x -> EditItemDone x value) el
+  sendAction a_ o
+  
+ctlHash :: Output Action -> IO ()
+ctlHash o = do
   hash <- getHash
-  case hash of
-    Nothing -> pure ()
-    Just hash' -> do
-        let path = takeWhile (not . (== '/')) . drop 1 . dropWhile (not . (== '/')) $ (show hash')
-        let path' =
-                case path of
+  let path = takeWhile (not . (== '/')) . drop 1 . dropWhile (not . (== '/')) $ (show hash)
+  let path_ =
+          case path of
                   "completed" -> Just Completed
                   "active"    -> Just Active
                   _           -> Nothing
-        send' o (Filter path')
+  sendAction (Filter path_) o
 
 ctlNewItem :: Output Action -> Element -> JSVal -> IO ()
 ctlNewItem o el ev = do
-  code <- toJSVal <$> keyCode ev
+  code <- keyCode ev
   value <- getValue el
   if toKeys code == Enter && value /= mempty
-    then send' o (NewItem value)
+    then (sendAction (NewItem value) o)
     else pure ()

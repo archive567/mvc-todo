@@ -11,7 +11,7 @@ import           Data.Foldable (sequenceA_)
 import qualified Data.Map as Map
 -- import           Data.Monoid
 import           Data.Text (pack)
-import           GHCJS.Extended (element, addClass, removeClass, Selector, setValue, setHtml, focusElement, elementOf, nullableToMaybe)
+import           GHCJS.Extended (Element(..), docElement, addClass, removeClass, Selector, setValue, setHtml, focus, elementOf)
 import           Lucid hiding (for_)
 import           Todo.Model
 import Protolude hiding (on, Selector)
@@ -36,8 +36,8 @@ renderers =
 
 renderClearCompleted :: Todos -> IO ()
 renderClearCompleted tds = do
-    el <- element ".clear-completed"
-    maybe (pure ()) (\x -> action x hidden) el
+    el <- docElement ".clear-completed"
+    action el hidden
   where
     hidden = "hidden" :: Selector
     numCompleted =
@@ -51,13 +51,11 @@ renderClearCompleted tds = do
 
 renderFilter :: Todos -> IO ()
 renderFilter tds = do
-  el <- element ".filters .selected"
-  maybe (pure ()) (\x -> removeClass x selected) el
-  -- FIXME: why does this break as a Selector
-  newSelection <- element
+  el <- docElement ".filters .selected"
+  removeClass el selected
+  newSelection <- docElement
       (Clay.element $ ".filters [href='#/" <> currentPage <> "']")
-  maybe (pure ()) (\x -> addClass x selected) newSelection
-
+  addClass newSelection selected
   where
     selected = "selected" :: Selector
     currentPage =
@@ -68,10 +66,10 @@ renderFilter tds = do
 
 renderHideStuff :: Todos -> IO ()
 renderHideStuff tds = do
-  main <- element ".main"
-  foot <- element ".footer"
-  maybe (pure ()) (\x -> action x hidden) main
-  maybe (pure ()) (\x -> action x hidden) foot
+  main <- docElement ".main"
+  foot <- docElement ".footer"
+  action main hidden
+  action foot hidden
   where
     hidden = "hidden" :: Selector
     action =
@@ -81,13 +79,13 @@ renderHideStuff tds = do
 
 renderNewItem :: Todos -> IO ()
 renderNewItem tds = do
-    el <- element ".new-todo"
-    maybe (pure ()) (\x -> setValue x (tds^.todosNewItem)) el
+    el <- docElement ".new-todo"
+    setValue el (tds^.todosNewItem)
 
 renderTodoCount :: Todos -> IO ()
 renderTodoCount tds = do
-    el <- element ".todo-count"
-    maybe (pure ()) (\x -> setHtml x itemsLeft) el
+    el <- docElement ".todo-count"
+    setHtml el itemsLeft
   where
     itemsLeft = strong_ (toHtml $ (show n :: Text)) <> " item" <> s <> " left"
     n = getSum $
@@ -100,21 +98,17 @@ renderTodoCount tds = do
 
 renderTodoList :: Todos -> IO ()
 renderTodoList tds = do
-    el <- element ".todo-list"
-    maybe (pure ()) (\x -> setHtml x (htmlItems tds)) el
+    el <- docElement ".todo-list"
+    setHtml el (htmlItems tds)
 
 renderFocus :: Todos -> IO ()
 renderFocus tds =
   case view todosEditing tds of
     Nothing -> pure ()
     Just _ -> do
-      el <- element ".todo-list"
-      editing <- case el of
-        Nothing -> pure Nothing
-        Just el' -> elementOf el' ".editing .edit"
-      case editing of
-        Nothing -> pure ()
-        Just ed -> focusElement ed
+      el <- docElement ".todo-list"
+      elEditing <- elementOf el ".editing .edit"
+      focus (Element elEditing)
 
 htmlItems :: Todos -> Html ()
 htmlItems tds =

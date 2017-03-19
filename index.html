@@ -7,7 +7,53 @@ Haskell • GHCJS • Testing
 <p><link rel="stylesheet" href="https://tonyday567.github.io/other/lhs.css"></p>
 <h1 id="ghcjs-testing-build-status"><a href="https://github.com/tonyday567/ghcjs-testing">ghcjs-testing</a> <a href="https://travis-ci.org/tonyday567/ghcjs-testing"><img src="https://travis-ci.org/tonyday567/ghcjs-testing.png" alt="Build Status" /></a></h1>
 <p>Minimal ghcjs install and test.</p>
-<p>This is old-school web page development: grab some html page, and create some javascript that tweaks said page.</p>
+<p>This is old-school web page development: grab some html page, and create some javascript that tweaks said page. This page starts off as a literate haskell file, gets built as a ghcjs piece of javascript, and then gets rendered as the said html page being tweaked.</p>
+<h2 id="todomvc">todomvc</h2>
+<section class="todoapp">
+<header class="header">
+<h1>
+todos
+</h1>
+<input class="new-todo" placeholder="What needs to be done?" autofocus>
+</header>
+<section class="main">
+<input class="toggle-all" type="checkbox"> <label for="toggle-all">Mark all as complete</label>
+<ul class="todo-list">
+</ul>
+</section>
+<footer class="footer">
+<span class="todo-count"><strong>0</strong> items left</span>
+<ul class="filters">
+<li>
+<a class="selected" href="#/">All</a>
+</li>
+<li>
+<a href="#/active">Active</a>
+</li>
+<li>
+<a href="#/completed">Completed</a>
+</li>
+</ul>
+<button class="clear-completed">
+Clear completed
+</button>
+</footer>
+</section>
+<footer class="info">
+<p>
+Double-click to edit a todo
+</p>
+<p>
+Created by <a href="http://github.com/tonyday567">Tony Day</a>
+</p>
+<p>
+Part of <a href="http://todomvc.com">TodoMVC</a>
+</p>
+</footer>
+<!-- todomvc scripts. -->
+<script src="node_modules/todomvc-common/base.js"></script>
+<!-- GHCJS scripts. -->
+<script language="javascript" src="other/mvc-todo.js"></script>
 <h2 id="testing-area">testing area</h2>
 <h2>
 test button
@@ -18,32 +64,42 @@ Click me!
 <!-- GHCJS scripts. -->
 <script language="javascript" src="other/ghcjs-testing.js"></script>
 <h1 id="code">code</h1>
-<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
-<span class="kw">import </span><span class="dt">Protolude</span>
-<span class="kw">import </span><span class="dt">GHCJS.Foreign.Callback</span>
-<span class="kw">import </span><span class="dt">Data.JSString</span> <span class="co">-- This includes an IsString instance for JSString</span>
-<span class="kw">import </span><span class="dt">GHCJS.Types</span> (<span class="dt">JSVal</span>)
-<span class="kw">import </span><span class="dt">GHCJS.DOM</span> (currentWindow)
-
-foreign <span class="kw">import </span>javascript unsafe
-  <span class="st">&quot;console.log($1)&quot;</span><span class="ot"> consoleLog ::</span> <span class="dt">JSString</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
-foreign <span class="kw">import </span>javascript unsafe
-  <span class="st">&quot;alert($1)&quot;</span><span class="ot"> alert ::</span> <span class="dt">JSString</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
-
-foreign <span class="kw">import </span>javascript unsafe &quot;window.onload = $1&quot;
-<span class="ot">  onload ::</span> <span class="dt">Callback</span> (<span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+<div class="sourceCode"><pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Data.Map</span> <span class="kw">as</span> <span class="dt">Map</span>
+<span class="kw">import           </span><span class="dt">GHCJS.Extended</span> (onload)
+<span class="kw">import           </span><span class="dt">MVC</span> <span class="kw">hiding</span> ((&lt;&gt;))
+<span class="kw">import           </span><span class="dt">MVC.Prelude</span> <span class="kw">as</span> <span class="dt">MVC</span>
+<span class="kw">import           </span><span class="dt">Todo.Controllers</span> (controllers)
+<span class="kw">import           </span><span class="dt">Todo.Model</span>
+<span class="kw">import           </span><span class="dt">Todo.Views</span> (render)
+<span class="kw">import </span><span class="dt">Control.Monad.Trans.State.Strict</span> (<span class="dt">State</span>, <span class="dt">StateT</span>)
+<span class="kw">import </span><span class="dt">Protolude</span> <span class="kw">hiding</span> (<span class="dt">State</span>, <span class="dt">StateT</span>, loop)
 
 <span class="ot">main ::</span> <span class="dt">IO</span> ()
-main <span class="fu">=</span> <span class="kw">do</span>
-  putStrLn (<span class="st">&quot;a putStrLn&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)
-  <span class="co">-- consoleLog $ (&quot;a consoleLog&quot;)</span>
+main <span class="fu">=</span> onload (void run)
 
-  w <span class="ot">&lt;-</span> currentWindow
-  <span class="kw">case</span> w <span class="kw">of</span>
-     <span class="dt">Nothing</span> <span class="ot">-&gt;</span> putStrLn (<span class="st">&quot;no window in currentWindow&quot;</span><span class="ot"> ::</span> <span class="dt">Text</span>)
-     <span class="dt">Just</span> w&#39; <span class="ot">-&gt;</span> alert <span class="st">&quot;an alert&quot;</span>
+<span class="ot">initialState ::</span> <span class="dt">Todos</span>
+initialState <span class="fu">=</span>
+  <span class="dt">Todos</span> <span class="st">&quot;&quot;</span> <span class="dt">Nothing</span> (<span class="dt">ItemId</span> <span class="dv">3</span>) <span class="dt">Nothing</span>
+    (Map.fromList <span class="fu">$</span> 
+     zip (<span class="dt">ItemId</span> <span class="fu">&lt;$&gt;</span> [<span class="dv">0</span> <span class="fu">..</span>])
+     [ <span class="dt">Item</span> <span class="dt">Active</span> <span class="st">&quot;write view&quot;</span>
+     , <span class="dt">Item</span> <span class="dt">Active</span> <span class="st">&quot;write controllers&quot;</span>
+     , <span class="dt">Item</span> <span class="dt">Completed</span> <span class="st">&quot;render a todo list&quot;</span>
+     ])
 
-  <span class="co">-- onload =&lt;&lt; asyncCallback (alert &quot;post window.onload alert!!&quot;)</span></code></pre></div>
+<span class="ot">run ::</span> <span class="dt">IO</span> <span class="dt">Todos</span>
+run <span class="fu">=</span> <span class="kw">do</span>
+  (o, i) <span class="ot">&lt;-</span> spawn unbounded
+  controllers o
+  runMVC initialState (asPipe <span class="fu">$</span> MVC.loop model)
+    ((,) <span class="fu">&lt;$&gt;</span> 
+     pure (asSink render_) <span class="fu">&lt;*&gt;</span> 
+     ( pure (asInput i) <span class="ot">`mappend`</span>
+       producer unbounded (yield <span class="dt">Refresh</span>)))
+
+<span class="ot">render_ ::</span> <span class="dt">Out</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+render_ (<span class="dt">ActionOut</span> action) <span class="fu">=</span> print action
+render_ (<span class="dt">StateOut</span> tds) <span class="fu">=</span> render tds</code></pre></div>
 <h1 id="compiling">compiling</h1>
 <p>The recipe below handles the bits and bobs you need to do every re-compile:</p>
 <ul class="incremental">
@@ -54,6 +110,11 @@ main <span class="fu">=</span> <span class="kw">do</span>
 <pre>
   <code style="white-space: pre-wrap;">
 stack build --exec "pandoc -f markdown+lhs -i readme.lhs -t html -o index.html" --exec "pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/ghcjs-testing.js $(stack path --local-install-root)/bin/readme.jsexe/all.js"
+  </code>
+</pre>
+<pre>
+  <code style="white-space: pre-wrap;">
+stack build --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo.js $(stack path --local-install-root)/bin/mvc-todo.jsexe/all.js"
   </code>
 </pre>
 <h1 id="notes">notes</h1>

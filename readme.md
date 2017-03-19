@@ -13,7 +13,16 @@ Haskell • GHCJS • Testing
 Minimal ghcjs install and test.
 
 This is old-school web page development: grab some html page, and create
-some javascript that tweaks said page.
+some javascript that tweaks said page. This page starts off as a
+literate haskell file, gets built as a ghcjs piece of javascript, and
+then gets rendered as the said html page being tweaked.
+
+todomvc
+-------
+
+``` {.include}
+other/todomvc.md
+```
 
 testing area
 ------------
@@ -30,32 +39,42 @@ code
 ====
 
 ``` {.sourceCode .literate .haskell}
-{-# LANGUAGE OverloadedStrings #-}
-import Protolude
-import GHCJS.Foreign.Callback
-import Data.JSString -- This includes an IsString instance for JSString
-import GHCJS.Types (JSVal)
-import GHCJS.DOM (currentWindow)
-
-foreign import javascript unsafe
-  "console.log($1)" consoleLog :: JSString -> IO ()
-foreign import javascript unsafe
-  "alert($1)" alert :: JSString -> IO ()
-
-foreign import javascript unsafe "window.onload = $1"
-  onload :: Callback (IO ()) -> IO ()
+import qualified Data.Map as Map
+import           GHCJS.Extended (onload)
+import           MVC hiding ((<>))
+import           MVC.Prelude as MVC
+import           Todo.Controllers (controllers)
+import           Todo.Model
+import           Todo.Views (render)
+import Control.Monad.Trans.State.Strict (State, StateT)
+import Protolude hiding (State, StateT, loop)
 
 main :: IO ()
-main = do
-  putStrLn ("a putStrLn" :: Text)
-  -- consoleLog $ ("a consoleLog")
+main = onload (void run)
 
-  w <- currentWindow
-  case w of
-     Nothing -> putStrLn ("no window in currentWindow" :: Text)
-     Just w' -> alert "an alert"
+initialState :: Todos
+initialState =
+  Todos "" Nothing (ItemId 3) Nothing
+    (Map.fromList $ 
+     zip (ItemId <$> [0 ..])
+     [ Item Active "write view"
+     , Item Active "write controllers"
+     , Item Completed "render a todo list"
+     ])
 
-  -- onload =<< asyncCallback (alert "post window.onload alert!!")
+run :: IO Todos
+run = do
+  (o, i) <- spawn unbounded
+  controllers o
+  runMVC initialState (asPipe $ MVC.loop model)
+    ((,) <$> 
+     pure (asSink render_) <*> 
+     ( pure (asInput i) `mappend`
+       producer unbounded (yield Refresh)))
+
+render_ :: Out -> IO ()
+render_ (ActionOut action) = print action
+render_ (StateOut tds) = render tds
 ```
 
 compiling
@@ -72,6 +91,11 @@ re-compile:
 <pre>
   <code style="white-space: pre-wrap;">
 stack build --exec "pandoc -f markdown+lhs -i readme.lhs -t html -o index.html" --exec "pandoc -f markdown+lhs -i readme.lhs -t markdown -o readme.md" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/ghcjs-testing.js $(stack path --local-install-root)/bin/readme.jsexe/all.js"
+  </code>
+</pre>
+<pre>
+  <code style="white-space: pre-wrap;">
+stack build --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo.js $(stack path --local-install-root)/bin/mvc-todo.jsexe/all.js"
   </code>
 </pre>
 notes

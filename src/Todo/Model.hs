@@ -18,8 +18,6 @@ module Todo.Model
   , _StateOut
   , _ActionOut
   , Item(..)
-  , itemText
-  , itemStatus
   , HasItem(..)
   , ItemId(..)
   , ItemStatus(..)
@@ -35,7 +33,8 @@ import           Data.Default
 import qualified Data.Map as Map
 -- import           Data.Monoid
 import           Pipes
-import          Protolude
+import Control.Monad.Trans.State.Strict (State, StateT)
+import Protolude hiding (State, StateT, loop)
 
 -- * ADTs
 data ItemStatus 
@@ -132,5 +131,5 @@ makePrisms ''Out
 -- | apply the incoming action to state and pass through the action (just so it can be console logged)
 model :: Action -> ListT (State Todos) Out
 model action =
-  (StateOut <$> modifyState action) -- <> (ActionOut <$> pure action)
+  (StateOut <$> modifyState action) `mappend` (ActionOut <$> pure action)
 
