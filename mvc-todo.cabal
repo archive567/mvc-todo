@@ -106,7 +106,7 @@ executable mvc-todo
   build-depends:
     base >= 4.7 && < 5,
     protolude,
-    ghcjs-testing,
+    mvc-todo,
     ghcjs-base,
     containers,
     mvc,
@@ -161,7 +161,7 @@ executable mvc-todo-auto
   build-depends:
     base >= 4.7 && < 5,
     protolude,
-    ghcjs-testing,
+    mvc-todo,
     ghcjs-base,
     containers,
     mvc,

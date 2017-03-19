@@ -1,0 +1,26 @@
+<meta charset="utf-8"> <link rel="stylesheet" href="https://tonyday567.github.io/other/lhs.css">
+<script type="text/javascript" async
+  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+<h1 id="haskell-todomvc-example">Haskell TodoMVC Example</h1>
+<blockquote>
+<p>Haskell is a strongly-typed, lazily-evaluated, functional programming language.</p>
+</blockquote>
+<p><a href="other/mvc-todo.html">live demo</a> with <a href="other/mvc-todo-auto.html">automation</a></p>
+<p>This example demonstrates an idiomatic haskell approach to the TodoMVC problem domain involving:</p>
+<ul class="incremental">
+<li>compilation of haskell to javascript using <a href="https://github.com/ghcjs/ghcjs">ghcjs</a>.</li>
+<li>The specification of a <code>Model</code> representing the problem domain, consisting of</li>
+<li>specification of Abstract Data Types (ADTs) for inputs, state and outputs.</li>
+<li>an algebra between state and actions.</li>
+<li>Use of the <a href="https://hackage.haskell.org/package/mvc">mvc</a> library for specification, asynchronicity and separation of model, view and controllers.</li>
+<li>The creation of <code>View</code>s that consume model outputs, by using vanilla javascript effects.</li>
+<li>The creation of <code>Controller</code>s that produce model inputs, by listening for Dom events using vanilla javascript.</li>
+</ul>
+<h1 id="recipe">recipe</h1>
+<p>The recipe below handles the bits and bobs you need to do every re-compile. This includes a compression step via <a href="http://dl.google.com/closure-compiler">closure</a>.</p>
+<pre>
+  <code style="white-space: pre-wrap;">
+stack build --exec "pandoc -f markdown -i readme.md -t html -o index.html --filter pandoc-include" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo-auto.js $(stack path --local-install-root)/bin/mvc-todo-auto.jsexe/all.js" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo.js $(stack path --local-install-root)/bin/mvc-todo.jsexe/all.js"
+  </code>
+</pre>
