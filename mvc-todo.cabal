@@ -1,7 +1,7 @@
 name:
-  ghcjs-testing
+  mvc-todo
 version:
-  0.1.0
+  1.0.0
 synopsis:
   See readme.lhs
 description:
@@ -9,7 +9,7 @@ description:
 category:
   project
 homepage:
-  https://github.com/tonyday567/ghcjs-testing
+  https://github.com/tonyday567/mvc-todo
 license:
   BSD3
 license-file:
@@ -56,7 +56,6 @@ library
     mvc,
     ghcjs-base,
     transformers
-
   default-extensions:
     NoImplicitPrelude,
     UnicodeSyntax,
