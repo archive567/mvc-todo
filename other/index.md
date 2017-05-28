@@ -8,7 +8,9 @@ Haskell TodoMVC Example
 
 > Haskell is a strongly-typed, lazily-evaluated, functional programming language.
 
-[live demo](other/mvc-todo.html) with [automation](other/mvc-todo-auto.html)
+- [live demo](other/mvc-todo.html)
+
+- with [automation](other/mvc-todo-auto.html)
 
 This example demonstrates an idiomatic haskell approach to the TodoMVC problem domain involving:
 
@@ -27,7 +29,7 @@ The recipe below handles the bits and bobs you need to do every re-compile.  Thi
 
 <pre>
   <code style="white-space: pre-wrap;">
-stack build --exec "pandoc -f markdown -i other/index.md -t html -o index.html --filter pandoc-include" --exec "pandoc -f markdown -i other/index.md -t markdown -o readme.md --filter pandoc-include" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo-auto.js $(stack path --local-install-root)/bin/mvc-todo-auto.jsexe/all.js" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo.js $(stack path --local-install-root)/bin/mvc-todo.jsexe/all.js"
+stack build --exec "pandoc -f markdown -i other/index.md -t html -o index.html --filter pandoc-include" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo-auto.js $(stack path --local-install-root)/bin/mvc-todo-auto.jsexe/all.js" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo.js $(stack path --local-install-root)/bin/mvc-todo.jsexe/all.js"
   </code>
 </pre>
 

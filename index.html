@@ -1,12 +1,12 @@
-<meta charset="utf-8"> <link rel="stylesheet" href="https://tonyday567.github.io/other/lhs.css">
-<script type="text/javascript" async
-  src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
-</script>
+<p><meta charset="utf-8"> <link rel="stylesheet" href="https://tonyday567.github.io/other/lhs.css"></p>
 <h1 id="haskell-todomvc-example">Haskell TodoMVC Example</h1>
 <blockquote>
 <p>Haskell is a strongly-typed, lazily-evaluated, functional programming language.</p>
 </blockquote>
-<p><a href="other/mvc-todo.html">live demo</a> with <a href="other/mvc-todo-auto.html">automation</a></p>
+<ul class="incremental">
+<li><p><a href="other/mvc-todo.html">live demo</a></p></li>
+<li><p>with <a href="other/mvc-todo-auto.html">automation</a></p></li>
+</ul>
 <p>This example demonstrates an idiomatic haskell approach to the TodoMVC problem domain involving:</p>
 <ul class="incremental">
 <li>compilation of haskell to javascript using <a href="https://github.com/ghcjs/ghcjs">ghcjs</a>.</li>
@@ -21,6 +21,6 @@
 <p>The recipe below handles the bits and bobs you need to do every re-compile. This includes a compression step via <a href="http://dl.google.com/closure-compiler">closure</a>.</p>
 <pre>
   <code style="white-space: pre-wrap;">
-stack build --exec "pandoc -f markdown -i other/index.md -t html -o index.html --filter pandoc-include" --exec "pandoc -f markdown -i other/index.md -t markdown -o readme.md --filter pandoc-include" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo-auto.js $(stack path --local-install-root)/bin/mvc-todo-auto.jsexe/all.js" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo.js $(stack path --local-install-root)/bin/mvc-todo.jsexe/all.js"
+stack build --exec "pandoc -f markdown -i other/index.md -t html -o index.html --filter pandoc-include" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo-auto.js $(stack path --local-install-root)/bin/mvc-todo-auto.jsexe/all.js" --exec "java -jar $(stack path --local-bin)/closure-compiler-v20170124.jar --js_output_file=other/mvc-todo.js $(stack path --local-install-root)/bin/mvc-todo.jsexe/all.js"
   </code>
 </pre>
